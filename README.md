@@ -1,1 +1,3 @@
 # node-yoctopuce - Access Yoctopuce devices from node.js #
+
+## Work in progress...
