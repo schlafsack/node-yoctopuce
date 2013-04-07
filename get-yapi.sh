@@ -1,5 +1,5 @@
 #!/bin/sh
-yapi_directory="yapi"
+yapi_directory="./yapi"
 yapi_archive="YoctoLib.cpp.10105.zip"
 yapi_url="http://www.yoctopuce.com/EN/downloads/"
 yapi_excludes=

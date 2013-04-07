@@ -1,4 +1,6 @@
 language: node_js
 node_js:
   - 0.10
-before_install: ./get-yapi.sh
+before_install:
+ - sudo apt-get update -qq
+ - sudo apt-get install -qq libusb
