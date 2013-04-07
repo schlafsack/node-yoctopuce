@@ -32,6 +32,7 @@
 
 */
 #include <iostream>
+#include <sstream>
 #include <node.h>
 #include <v8.h>
 #include <string>
@@ -43,7 +44,7 @@ using namespace std;
 using namespace v8;
 using namespace node;
 
-namespace yoctopuce {
+namespace node_yoctopuce {
 
 	// //////////////////////////////////////////////////////////////////
 	// Throwable error class that can be converted to a JavaScript
@@ -51,53 +52,109 @@ namespace yoctopuce {
 	// //////////////////////////////////////////////////////////////////
 	class JSException
 	{
-
 	public:
 		JSException(const string& text) : _message(text) {};
 		virtual const string message() const { return _message; }
-		virtual Handle<Value> asV8Exception() const { return ThrowException(String::New(message().c_str())); }
-
+		virtual Handle<Value> AsV8Exception() const { return ThrowException(String::New(message().c_str())); }
 	protected:
 		string _message;
-
 	};
 
-	class Yoctopuce : public ObjectWrap
+	class NodeYapi : public ObjectWrap
 	{
-
 	public:
+
 		static void Initialize(Handle<Object> target);
 		static void Deinitialize(void*);
-	private:
+		static void SetCallbacks();
 
+		static Handle<Value> UpdateDeviceList(const Arguments& args);
+		static Handle<Value> RegisterLogFunction(const Arguments& args);
+
+	private:
+		static void LogCallback(const char *log, u32 loglen);
 	};
 
-	void Yoctopuce::Deinitialize(void*)
+	void NodeYapi::SetCallbacks()
 	{
-		yapiFreeAPI();
+		yapiRegisterLogFunction(LogCallback);
 	}
 
-	void Yoctopuce::Initialize(Handle<Object> target)
+	void NodeYapi::LogCallback(const char *log, u32 loglen)
 	{
-		node::AtExit(Yoctopuce::Deinitialize, 0);
+		cout << log << endl;
+	}
+
+	void NodeYapi::Initialize(Handle<Object> target)
+	{
+		node::AtExit(NodeYapi::Deinitialize, 0);
 
 		char errmsg[YOCTO_ERRMSG_LEN];
-		if(yapiInitAPI(Y_DETECT_USB,errmsg) != YAPI_SUCCESS)
+		if(yapiInitAPI(Y_DETECT_USB,errmsg) != YAPI_SUCCESS
+			|| yapiUpdateDeviceList(true, errmsg) != YAPI_SUCCESS)
 		{
-			cerr << "Unable to initialize yapi. yapiInitAPI failed: " << errmsg << endl;
+			cerr << "Unable to initialize yapi. " << errmsg << endl;
 			abort();
 		}
 
 		HandleScope scope;
+
+		NODE_SET_METHOD(target,"updateDeviceList", NodeYapi::UpdateDeviceList);
+		NODE_SET_METHOD(target,"registerLogFunction", NodeYapi::RegisterLogFunction);
+	}
+
+	void NodeYapi::Deinitialize(void*)
+	{
+		yapiFreeAPI();
+	}
+
+	Handle<Value> NodeYapi::UpdateDeviceList(const Arguments& args)
+	{
+		HandleScope scope;
+
+		try{
+			char errmsg[YOCTO_ERRMSG_LEN];
+			if(yapiUpdateDeviceList(false, errmsg) != YAPI_SUCCESS)
+			{
+				ostringstream os;
+				os << "Unable to update the device list. yapiUpdateDeviceList failed: " << errmsg;
+				throw JSException(os.str());
+			}
+
+			return scope.Close(Undefined());
+		}
+		catch (const JSException& e) {
+			return scope.Close(e.AsV8Exception());
+		}
+	}
+
+	Handle<Value> NodeYapi::RegisterLogFunction(const Arguments& args)
+	{
+		HandleScope scope;
+
+		try{
+
+			if (args.Length() != 1
+				|| !args[0]->IsFunction()) {
+					return ThrowException(String::New("need one callback function argument in read"));
+			}
+
+
+			return scope.Close(Undefined());
+		}
+		catch (const JSException& e) {
+			return scope.Close(e.AsV8Exception());
+		}
 	}
 
 	extern "C" {
 		static void init (Handle<Object> target)
 		{
 			HandleScope handleScope;
-			Yoctopuce::Initialize(target);
+			NodeYapi::Initialize(target);
+			NodeYapi::SetCallbacks();
 		}
-		NODE_MODULE(yoctopuce, init);
+		NODE_MODULE(node_yapi, init);
 	}
 
 }

@@ -1,7 +1,7 @@
 {
     "targets": [
         {
-            "target_name": "yapi",
+            "target_name": "yapi_lib",
             "type": "static_library",
             "sources": [
                 "yapi/src/yapi.h",
@@ -60,12 +60,12 @@
             ]
         },
         {
-            "target_name": "yoctopuce",
+            "target_name": "node_yapi",
             "sources": [
-                "src/yoctopuce.cc"
+                "src/node_yapi.cc"
             ],
             "dependencies": [
-                "yapi"
+                "yapi_lib"
             ],
             "defines": [
                 "_LARGEFILE_SOURCE",
