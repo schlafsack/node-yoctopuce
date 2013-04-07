@@ -67,56 +67,21 @@ namespace yoctopuce {
 
 	public:
 		static void Initialize(Handle<Object> target);
-		static Handle<Value> devices(const Arguments& args);
+		static void Deinitialize(void*);
 	private:
-		static Handle<Value> New(const Arguments& args);
 
 	};
 
-	Handle<Value> Yoctopuce::New(const Arguments& args)
-	{
-		if (!args.IsConstructCall()) {
-			return ThrowException(String::New("Yoctopuce function can only be used as a constructor"));
-		}
-
-		HandleScope scope;
-
-		try {
-			Yoctopuce* yoctopuce;
-			yoctopuce = new Yoctopuce();
-			yoctopuce->Wrap(args.This());
-			return args.This();
-		}    
-		catch (const JSException& e) {
-			return e.asV8Exception();
-		}
-	}
-
-	Handle<Value> Yoctopuce::devices(const Arguments& args)
-	{
-		Local<Array> retval = Array::New();
-
-		char errmsg[256];
-		if(yapiUpdateDeviceList(false, errmsg) != YAPI_SUCCESS)
-		{
-			cerr << "Unable to update device list. yapiUpdateDeviceList failed: " << errmsg << endl;
-			abort();
-		}
-
-		return retval;
-	}
-
-	static void deinitialize(void*)
+	void Yoctopuce::Deinitialize(void*)
 	{
 		yapiFreeAPI();
 	}
 
 	void Yoctopuce::Initialize(Handle<Object> target)
 	{
+		node::AtExit(Yoctopuce::Deinitialize, 0);
 
-		node::AtExit(deinitialize, 0);
-
-		char errmsg[256];
+		char errmsg[YOCTO_ERRMSG_LEN];
 		if(yapiInitAPI(Y_DETECT_USB,errmsg) != YAPI_SUCCESS)
 		{
 			cerr << "Unable to initialize yapi. yapiInitAPI failed: " << errmsg << endl;
@@ -124,13 +89,6 @@ namespace yoctopuce {
 		}
 
 		HandleScope scope;
-
-		Local<FunctionTemplate> yoctopuceTemplate = FunctionTemplate::New(Yoctopuce::New);
-		yoctopuceTemplate->InstanceTemplate()->SetInternalFieldCount(1);
-		yoctopuceTemplate->SetClassName(String::New("Yoctopuce"));
-
-		target->Set(String::NewSymbol("Yoctopuce"), yoctopuceTemplate->GetFunction());
-		target->Set(String::NewSymbol("devices"), FunctionTemplate::New(Yoctopuce::devices)->GetFunction());
 	}
 
 	extern "C" {

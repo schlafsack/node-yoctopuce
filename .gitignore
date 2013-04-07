@@ -29,6 +29,11 @@ obj/
 [Bb]in
 [Dd]ebug*/
 [Rr]elease*/
+
+#Idea files
+.idea
+*.ipr
+*.iml
  
 #Project files
 [Bb]uild/
