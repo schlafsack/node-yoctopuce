@@ -1,5 +1,7 @@
 // -*- C++ -*-
-
+//
+// Copyright (c) 2013, Tom Greasley <tom@greasley.com>
+//
 // Copyright Tom Greasley and contributors. All rights reserved.
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation
