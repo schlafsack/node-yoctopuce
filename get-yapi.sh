@@ -24,3 +24,6 @@ fi
 echo "Extracting archive..."	
 unzip -qq -u -j $yapi_archive Sources/yapi* -d src
 echo "Done getting yapi."
+
+rm $yapi_archive
+echo "Clean up complete."

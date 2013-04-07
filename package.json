@@ -13,9 +13,9 @@
     },
     "bundleDependencies":[ "yapi" ],
     "scripts":{
-        "preupdate":"get-yapi.sh",
-        "preinstall":"get-yapi.sh",
-        "install":"install.sh"
+        "preupdate":"./get-yapi.sh",
+        "preinstall":"./get-yapi.sh",
+        "install":"./install.sh"
     },
     "main":"./lib/yoctopuce.js",
     "engines":{
