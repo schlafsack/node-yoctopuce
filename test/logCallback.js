@@ -3,9 +3,15 @@ var util = require('util');
 
 var yoctopuce = new Yoctopuce();
 
-for (var x = 1; x <= 10; x++)
+setInterval(function ()
 {
-    util.log(util.format("Update %d.", x));
     yoctopuce.updateDeviceList();
-    yoctopuce.getDeviceInfo();
-}
+    try
+    {
+        yoctopuce.getDeviceInfo();
+    }
+    catch (e)
+    {
+        util.error(e);
+    }
+}, 500);
