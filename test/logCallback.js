@@ -1,17 +1,9 @@
-var Yoctopuce = require('../').Yoctopuce;
+var yoctopuce = require('../');
 var util = require('util');
 
-var yoctopuce = new Yoctopuce();
-
+util.print("Use Ctrl-C to quit.\n");
 setInterval(function ()
 {
     yoctopuce.updateDeviceList();
-    try
-    {
-        yoctopuce.getDeviceInfo();
-    }
-    catch (e)
-    {
-        util.error(e);
-    }
-}, 500);
+    util.log("Device list updated.");
+}, 2000);

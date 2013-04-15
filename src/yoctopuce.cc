@@ -40,17 +40,17 @@ using namespace node;
 namespace node_yoctopuce 
 {
 
-	static Persistent<FunctionTemplate> yoctopuce_constructor;
-	static Persistent<Object> event_context;
-	static Persistent<String> events_symbol;
-	static Persistent<String> log_symbol;
-	static Persistent<String> devicelog_symbol;
-	static Persistent<String> devicearrival_symbol;
-	static Persistent<String> deviceremoval_symbol;
-	static Persistent<String> devicechange_symbol;
+	Persistent<Object> Yoctopuce::event_context;
+	Persistent<String> Yoctopuce::events_symbol;
+	Persistent<String> Yoctopuce::log_symbol;
+	Persistent<String> Yoctopuce::devicelog_symbol;
+	Persistent<String> Yoctopuce::devicearrival_symbol;
+	Persistent<String> Yoctopuce::deviceremoval_symbol;
+	Persistent<String> Yoctopuce::devicechange_symbol;
 
 	void Yoctopuce::Initialize(Handle<Object> target)
 	{
+		
 		node::AtExit(Yoctopuce::Deinitialize, 0);
 
 		char errmsg[YOCTO_ERRMSG_LEN];
@@ -79,17 +79,9 @@ namespace node_yoctopuce
 		yapiRegisterDeviceRemovalCallback(Yoctopuce::DeviceRemovalCallback);
 		yapiRegisterDeviceChangeCallback(Yoctopuce::DeviceChangeCallback);
 
-		Local<FunctionTemplate> newTemplate = FunctionTemplate::New(New);
-		Local<String> name = String::NewSymbol("Yoctopuce");
-		yoctopuce_constructor = Persistent<FunctionTemplate>::New(newTemplate);
-		yoctopuce_constructor->InstanceTemplate()->SetInternalFieldCount(1);
-		yoctopuce_constructor->SetClassName(name);
-
-		NODE_SET_PROTOTYPE_METHOD(yoctopuce_constructor, "updateDeviceList", Yoctopuce::UpdateDeviceList);
-		NODE_SET_PROTOTYPE_METHOD(yoctopuce_constructor, "handleEvents", Yoctopuce::HandleEvents);
-		NODE_SET_PROTOTYPE_METHOD(yoctopuce_constructor, "getDeviceInfo", Yoctopuce::GetDeviceInfo);
-
-		target->Set(name, yoctopuce_constructor->GetFunction());
+		NODE_SET_METHOD(target, "updateDeviceList", Yoctopuce::UpdateDeviceList);
+		NODE_SET_METHOD(target, "handleEvents", Yoctopuce::HandleEvents);
+		NODE_SET_METHOD(target, "getDeviceInfo", Yoctopuce::GetDeviceInfo);
 
 	}
 
@@ -98,18 +90,6 @@ namespace node_yoctopuce
 		yapiFreeAPI();
 	}
 
-	Handle<Value> Yoctopuce::New(const Arguments& args) 
-	{
-		assert(args.IsConstructCall());
-
-		HandleScope scope;
-		Yoctopuce *nodeYapi = new Yoctopuce();
-
-		nodeYapi->Wrap(args.This());
-		nodeYapi->Ref();
-
-		return scope.Close(args.This());
-	}
 
 	Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args)
 	{
@@ -155,7 +135,7 @@ namespace node_yoctopuce
 		return scope.Close(Undefined());
 	}
 
-	
+
 
 	void Yoctopuce::EmitEvent(Handle<String> event, int argc, Handle<Value> argv[]) 
 	{
