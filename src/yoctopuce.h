@@ -45,6 +45,15 @@ namespace node_yoctopuce
 
 	protected:	
 
+		static Persistent<Object> event_context;
+		
+		static Persistent<String> events_symbol;
+		static Persistent<String> log_symbol;
+		static Persistent<String> devicelog_symbol;
+		static Persistent<String> devicearrival_symbol;
+		static Persistent<String> deviceremoval_symbol;
+		static Persistent<String> devicechange_symbol;
+
 		static Handle<Value> UpdateDeviceList(const Arguments& args);
 		static Handle<Value> HandleEvents(const Arguments& args);
 		static Handle<Value> GetDeviceInfo(const Arguments& args);
@@ -56,17 +65,6 @@ namespace node_yoctopuce
 		static void DeviceArrivalCallback(YAPI_DEVICE device);
 		static void DeviceRemovalCallback(YAPI_DEVICE device);
 		static void DeviceChangeCallback(YAPI_DEVICE device);
-
-	private:
-
-		static Persistent<FunctionTemplate> yoctopuce_constructor;
-		static Persistent<Object> event_context;
-		static Persistent<String> events_symbol;
-		static Persistent<String> log_symbol;
-		static Persistent<String> devicelog_symbol;
-		static Persistent<String> devicearrival_symbol;
-		static Persistent<String> deviceremoval_symbol;
-		static Persistent<String> devicechange_symbol;
 
 		Yoctopuce() {};
 

@@ -71,8 +71,13 @@ namespace node_yoctopuce
 		devicechange_symbol = NODE_PSYMBOL("onDeviceChange");
 
 		event_context = Persistent<Object>::New(Object::New());
-		target->Set(events_symbol, event_context);
+		event_context->Set(devicelog_symbol, Object::New()); 
+		event_context->Set(devicearrival_symbol, Object::New()); 
+		event_context->Set(deviceremoval_symbol, Object::New()); 
+		event_context->Set(devicechange_symbol, Object::New()); 
 
+		target->Set(events_symbol, event_context);
+		
 		yapiRegisterLogFunction(Yoctopuce::LogCallback );
 		yapiRegisterDeviceLogCallback(Yoctopuce::DeviceLogCallback);
 		yapiRegisterDeviceArrivalCallback(Yoctopuce::DeviceArrivalCallback);
@@ -135,18 +140,12 @@ namespace node_yoctopuce
 		return scope.Close(Undefined());
 	}
 
-
-
 	void Yoctopuce::EmitEvent(Handle<String> event, int argc, Handle<Value> argv[]) 
 	{
 		HandleScope scope;
 		if(event_context->Get(event)->IsFunction())
 		{
 			MakeCallback(event_context, event, argc, argv);
-		}
-		else
-		{
-			cout << "No handler";
 		}
 	}
 

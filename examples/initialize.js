@@ -1,4 +1,4 @@
-var yapi = require('../');
+var yoctopuce = require('../');
 var util = require('util');
 
-util.log("Yoctopuce Initialized:\n" + util.inspect(yapi, { showHidden:true, depth:null }));
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
