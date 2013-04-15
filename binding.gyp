@@ -60,9 +60,9 @@
             ]
         },
         {
-            "target_name": "yoctopuce",
+            "target_name": "node_yoctopuce",
             "sources": [
-                "src/yoctopuce_bindings.cc",
+                "src/node_yoctopuce.cc",
 				"src/yoctopuce.h",
 				"src/yoctopuce.cc"
             ],

@@ -17,7 +17,7 @@
         "preinstall":"./get-yapi.sh",
         "install":"./install.sh"
     },
-    "main":"./lib/yoctopuce.js",
+    "main":"./lib/node_yoctopuce.js",
     "engines":{
         "node":">=0.8.*"
     },
