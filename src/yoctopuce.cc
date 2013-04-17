@@ -50,16 +50,6 @@ namespace node_yoctopuce
 
 	void Yoctopuce::Initialize(Handle<Object> target)
 	{
-		
-		node::AtExit(Yoctopuce::Deinitialize, 0);
-
-		char errmsg[YOCTO_ERRMSG_LEN];
-		if(yapiInitAPI(Y_DETECT_USB,errmsg) != YAPI_SUCCESS
-			|| yapiUpdateDeviceList(true, errmsg) != YAPI_SUCCESS)
-		{
-			cerr << "Unable to initialize yapi. " << errmsg << endl;
-			abort();
-		}
 
 		HandleScope scope;
 
@@ -77,24 +67,20 @@ namespace node_yoctopuce
 		event_context->Set(devicechange_symbol, Object::New()); 
 
 		target->Set(events_symbol, event_context);
-		
-		yapiRegisterLogFunction(Yoctopuce::LogCallback );
-		yapiRegisterDeviceLogCallback(Yoctopuce::DeviceLogCallback);
-		yapiRegisterDeviceArrivalCallback(Yoctopuce::DeviceArrivalCallback);
-		yapiRegisterDeviceRemovalCallback(Yoctopuce::DeviceRemovalCallback);
-		yapiRegisterDeviceChangeCallback(Yoctopuce::DeviceChangeCallback);
 
-		NODE_SET_METHOD(target, "updateDeviceList", Yoctopuce::UpdateDeviceList);
-		NODE_SET_METHOD(target, "handleEvents", Yoctopuce::HandleEvents);
-		NODE_SET_METHOD(target, "getDeviceInfo", Yoctopuce::GetDeviceInfo);
+		//yapiRegisterLogFunction(LogCallback);
+		yapiRegisterDeviceLogCallback(DeviceLogCallback);
+		yapiRegisterDeviceArrivalCallback(DeviceArrivalCallback);
+		yapiRegisterDeviceRemovalCallback(DeviceRemovalCallback);
+		yapiRegisterDeviceChangeCallback(DeviceChangeCallback);
+
+		NODE_SET_METHOD(target, "updateDeviceList", UpdateDeviceList);
+		NODE_SET_METHOD(target, "handleEvents", HandleEvents);
+		NODE_SET_METHOD(target, "getDeviceInfo", GetDeviceInfo);
+
+		cerr << "Hello!";
 
 	}
-
-	void Yoctopuce::Deinitialize(void*)
-	{
-		yapiFreeAPI();
-	}
-
 
 	Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args)
 	{
@@ -107,7 +93,6 @@ namespace node_yoctopuce
 			os << "Unable to update the device list. yapiUpdateDeviceList failed: " << errmsg;
 			return ThrowException(Exception::Error(String::New(os.str().c_str())));
 		}
-
 		return scope.Close(Undefined());
 	}
 
@@ -152,7 +137,7 @@ namespace node_yoctopuce
 	void Yoctopuce::LogCallback(const char *log, u32 loglen)
 	{
 		HandleScope scope;
-		Handle<Value> argv[1] = {String::New(log)};
+		Handle<Value> argv[1] = {String::New(log, loglen)};
 		EmitEvent(log_symbol, 1, argv);
 	}
 

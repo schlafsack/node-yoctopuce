@@ -24,14 +24,43 @@
 
 #include <v8.h>
 #include <node.h>
+#include <stdio.h>
 
 #include "yoctopuce.h"
+
+using node::AtExit;
+using v8::Handle;
+using v8::HandleScope;
+using v8::Local;
+using v8::Object;
 
 namespace node_yoctopuce
 {
 	extern "C" {
+
+		static void deinit(void) {
+			yapiFreeAPI();
+		}
+
+		static void logCallback(const char *log, u32 loglen)
+		{
+					
+		}
+
 		static void init (Handle<Object> target)
 		{
+			atexit(deinit);
+
+			char errmsg[YOCTO_ERRMSG_LEN];
+			if(yapiInitAPI(Y_DETECT_USB,errmsg) != YAPI_SUCCESS
+				|| yapiUpdateDeviceList(true, errmsg) != YAPI_SUCCESS)
+			{
+				fprintf(stderr, "Unable to initialize yapi.%s\n", errmsg);
+				abort();
+			}
+
+			yapiRegisterLogFunction(logCallback);
+
 			Yoctopuce::Initialize(target);
 		}
 		NODE_MODULE(node_yoctopuce, init);

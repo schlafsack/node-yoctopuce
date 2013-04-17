@@ -41,7 +41,12 @@ namespace node_yoctopuce
 	public:
 
 		static void Initialize(Handle<Object> target);
-		static void Deinitialize(void*);
+
+		static void LogCallback(const char *log, u32 loglen);
+		static void DeviceLogCallback(YAPI_DEVICE device);
+		static void DeviceArrivalCallback(YAPI_DEVICE device);
+		static void DeviceRemovalCallback(YAPI_DEVICE device);
+		static void DeviceChangeCallback(YAPI_DEVICE device);
 
 	protected:	
 
@@ -60,11 +65,7 @@ namespace node_yoctopuce
 
 		static void EmitEvent(Handle<String>eventName, int argc, Handle<Value> args[]);
 
-		static void LogCallback(const char *log, u32 loglen);
-		static void DeviceLogCallback(YAPI_DEVICE device);
-		static void DeviceArrivalCallback(YAPI_DEVICE device);
-		static void DeviceRemovalCallback(YAPI_DEVICE device);
-		static void DeviceChangeCallback(YAPI_DEVICE device);
+
 
 		Yoctopuce() {};
 
