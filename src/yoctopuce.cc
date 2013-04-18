@@ -68,7 +68,7 @@ namespace node_yoctopuce
 
 		target->Set(events_symbol, event_context);
 
-		//yapiRegisterLogFunction(LogCallback);
+		yapiRegisterLogFunction(LogCallback);
 		yapiRegisterDeviceLogCallback(DeviceLogCallback);
 		yapiRegisterDeviceArrivalCallback(DeviceArrivalCallback);
 		yapiRegisterDeviceRemovalCallback(DeviceRemovalCallback);
@@ -137,7 +137,7 @@ namespace node_yoctopuce
 	void Yoctopuce::LogCallback(const char *log, u32 loglen)
 	{
 		HandleScope scope;
-		Handle<Value> argv[1] = {String::New(log, loglen)};
+		Handle<Value> argv[1] = {String::New(string(log).c_str())};
 		EmitEvent(log_symbol, 1, argv);
 	}
 

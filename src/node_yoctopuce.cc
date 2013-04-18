@@ -28,23 +28,15 @@
 
 #include "yoctopuce.h"
 
-using node::AtExit;
-using v8::Handle;
-using v8::HandleScope;
-using v8::Local;
-using v8::Object;
+using v8::String;
 
 namespace node_yoctopuce
 {
 	extern "C" {
 
-		static void deinit(void) {
-			yapiFreeAPI();
-		}
-
-		static void logCallback(const char *log, u32 loglen)
+		static void deinit(void) 
 		{
-					
+			yapiFreeAPI();
 		}
 
 		static void init (Handle<Object> target)
@@ -58,11 +50,12 @@ namespace node_yoctopuce
 				fprintf(stderr, "Unable to initialize yapi.%s\n", errmsg);
 				abort();
 			}
-
-			yapiRegisterLogFunction(logCallback);
-
+			
 			Yoctopuce::Initialize(target);
+
 		}
+
 		NODE_MODULE(node_yoctopuce, init);
+
 	}
 }
