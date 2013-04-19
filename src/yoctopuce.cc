@@ -136,36 +136,37 @@ namespace node_yoctopuce
 
 	void Yoctopuce::LogCallback(const char *log, u32 loglen)
 	{
-		HandleScope scope;
+		cout << log;
+		/*HandleScope scope;
 		Handle<Value> argv[1] = {String::New(string(log).c_str())};
-		EmitEvent(log_symbol, 1, argv);
+		EmitEvent(log_symbol, 1, argv);*/
 	}
 
 	void Yoctopuce::DeviceLogCallback(YAPI_DEVICE device)
 	{
-		HandleScope scope;
+		/*HandleScope scope;
 		Handle<Value> argv[1] = {Integer::New(device)};
-		EmitEvent(devicelog_symbol, 1, argv);
+		EmitEvent(devicelog_symbol, 1, argv);*/
 	}
 
 	void Yoctopuce::DeviceArrivalCallback(YAPI_DEVICE device)
 	{
-		HandleScope scope;
+		/*HandleScope scope;
 		Handle<Value> argv[1] = {Integer::New(device)};
-		EmitEvent(devicearrival_symbol, 1, argv);
+		EmitEvent(devicearrival_symbol, 1, argv);*/
 	}
 
 	void Yoctopuce::DeviceRemovalCallback(YAPI_DEVICE device)
 	{
-		HandleScope scope;
+		/*HandleScope scope;
 		Handle<Value> argv[1] = {Integer::New(device)};
-		EmitEvent(deviceremoval_symbol, 1, argv);
+		EmitEvent(deviceremoval_symbol, 1, argv);*/
 	}
 
 	void Yoctopuce::DeviceChangeCallback(YAPI_DEVICE device)
 	{
-		HandleScope scope;
+		/*HandleScope scope;
 		Handle<Value> argv[1] = {Integer::New(device)};
-		EmitEvent(devicechange_symbol, 1, argv);
+		EmitEvent(devicechange_symbol, 1, argv);*/
 	}
 }

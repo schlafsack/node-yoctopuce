@@ -38,10 +38,6 @@
             "include_dirs": [
                 "yapi/src"
             ],
-            "defines": [
-                "_LARGEFILE_SOURCE",
-                "_FILE_OFFSET_BITS=64"
-            ],
             "conditions": [
                 [
                     "OS=='win'",
@@ -51,12 +47,6 @@
                         ]
                     }
                 ]
-            ],
-            "cflags": [
-                "-g"
-            ],
-            "cflags!": [
-                "-ansi"
             ]
         },
         {
@@ -68,35 +58,7 @@
             ],
             "dependencies": [
                 "yapi"
-            ],
-            "defines": [
-                "_LARGEFILE_SOURCE",
-                "_FILE_OFFSET_BITS=64"
-            ],
-            "cflags!": [
-                "-ansi",
-                "-fno-exceptions"
-            ],
-            "cflags_cc!": [
-                "-fno-exceptions"
-            ],
-            "cflags": [
-                "-g",
-                "-exceptions"
-            ],
-            "cflags_cc": [
-                "-g",
-                "-exceptions"
-            ],
-            "configurations": {
-                "Release": {
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "ExceptionHandling": 1
-                        }
-                    }
-                }
-            }
+            ]
         }
     ]
 }
