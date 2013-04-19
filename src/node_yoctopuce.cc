@@ -25,7 +25,7 @@
 #include <v8.h>
 #include <node.h>
 #include <stdio.h>
-#include <cstdlib>
+#include <stdlib.h>
 
 #include "yoctopuce.h"
 
