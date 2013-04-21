@@ -54,7 +54,9 @@
             "sources": [
                 "src/node_yoctopuce.cc",
 				"src/yoctopuce.h",
-				"src/yoctopuce.cc"
+				"src/yoctopuce.cc",
+				"threading.h",
+				"async.h"
             ],
             "dependencies": [
                 "yapi"

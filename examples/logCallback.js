@@ -29,8 +29,14 @@ yoctopuce.events.onDeviceChange = function (message)
 util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
 
 util.print("Use Ctrl-C to quit.\n");
+
 setInterval(function ()
 {
     yoctopuce.updateDeviceList();
     util.log("Device list updated.");
-}, 2000);
+}, 5000);
+
+setInterval(function ()
+{
+    yoctopuce.handleEvents();
+}, 500);

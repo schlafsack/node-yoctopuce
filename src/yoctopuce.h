@@ -22,12 +22,14 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#ifndef YOCTOPUCE_H
-#define YOCTOPUCE_H
+#ifndef NODE_YOCTOPUCE_H
+#define NODE_YOCTOPUCE_H
 
 #include <v8.h>
 #include <node.h>
 #include <yapi.h>
+
+#include "async.h"
 
 using namespace v8;
 using namespace node;
@@ -41,6 +43,16 @@ namespace node_yoctopuce
 	public:
 
 		static void Initialize(Handle<Object> target);
+		static void Uninitialize();
+
+		typedef Async<std::string> AsyncLogCallback;
+		typedef Async<YAPI_DEVICE> AsyncDeviceUpdateCallback;
+
+		static AsyncLogCallback* log_event;
+		static AsyncDeviceUpdateCallback* device_log_event;
+		static AsyncDeviceUpdateCallback* device_arrival_event;
+		static AsyncDeviceUpdateCallback* device_removal_event;
+		static AsyncDeviceUpdateCallback* device_change_event;
 
 	protected:	
 
@@ -59,7 +71,7 @@ namespace node_yoctopuce
 
 		static void EmitEvent(Handle<String>eventName, int argc, Handle<Value> args[]);
 
-		static void LogCallback(const char *log, u32 loglen);
+		static void LogCallback(std::string log);
 		static void DeviceLogCallback(YAPI_DEVICE device);
 		static void DeviceArrivalCallback(YAPI_DEVICE device);
 		static void DeviceRemovalCallback(YAPI_DEVICE device);
