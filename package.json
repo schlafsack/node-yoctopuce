@@ -15,7 +15,20 @@
 	"engines":{
 		"node":">=0.8.*"
 	},
-	"license":"MIT/X11",
+	"licenses":[
+		{
+			"type":"MIT/X11",
+			"url":"https://github.com/schlafsack/node-yoctopuce/blob/master/LICENCE"
+		},
+		{
+			"type":"BSD",
+			"url":"https://github.com/developmentseed/node-sqlite3/blob/master/LICENSE"
+		},
+		{
+			"type":"Custom",
+			"url":"https://github.com/yoctopuce/yoctolib_cpp/blob/master/README.txt"
+		}
+	],
 	"dependencies":{
 		"bindings":"*"
 	}

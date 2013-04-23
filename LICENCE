@@ -22,4 +22,8 @@ IN THE SOFTWARE.
 
 See Also:
 
-    https://github.com/developmentseed/node-sqlite3/blob/master/LICENSE
+	node-sqlite3
+    	https://github.com/developmentseed/node-sqlite3/blob/master/LICENSE
+
+    yoctopuce
+    	https://github.com/yoctopuce/yoctolib_cpp/blob/master/README.txt
