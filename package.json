@@ -1,29 +1,29 @@
 {
-    "name":"node-yoctopuce",
-    "description":"Yoctopuce device access library",
-    "version":"0.1.0",
-    "author":{
-        "name":"Tom Greasley",
-        "email":"tom@greasley.com",
-        "url":"https://github.com/schlafsack"
-    },
-    "repository":{
-        "type":"git",
-        "url":"git://github.com/schlafsack/node-yoctopuce.git"
-    },
-    "bundleDependencies":[ "yapi" ],
-    "scripts":{
-        "preupdate":"./get-yapi.sh",
-        "preinstall":"./get-yapi.sh",
-        "install":"./install.sh"
-    },
-    "main":"./lib/node_yoctopuce.js",
-    "engines":{
-        "node":">=0.8.*"
-    },
-    "license":"MIT/X11",
-    "dependencies":{
-        "bindings":"*"
-    },
-    "devDependencies":{}
+	"name":"node-yoctopuce",
+	"description":"Yoctopuce device access library",
+	"version":"0.1.0",
+	"author":{
+		"name":"Tom Greasley",
+		"email":"tom@greasley.com",
+		"url":"https://github.com/schlafsack"
+	},
+	"repository":{
+		"type":"git",
+		"url":"git://github.com/schlafsack/node-yoctopuce.git"
+	},
+	"bundleDependencies":[ "yapi" ],
+	"scripts":{
+		"preupdate":"get-yapi.sh",
+		"preinstall":"get-yapi.sh",
+		"install":"install.sh"
+	},
+	"main":"./lib/node_yoctopuce.js",
+	"engines":{
+		"node":">=0.8.*"
+	},
+	"license":"MIT/X11",
+	"dependencies":{
+		"bindings":"*"
+	},
+	"devDependencies":{}
 }

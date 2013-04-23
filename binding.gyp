@@ -1,66 +1,79 @@
 {
-    "targets": [
-        {
-            "target_name": "yapi",
-            "type": "static_library",
-            "sources": [
-                "yapi/src/yapi.h",
-                "yapi/src/ydef.h",
-                "yapi/src/yfifo.h",
-                "yapi/src/yhash.h",
-                "yapi/src/yjson.h",
-                "yapi/src/ykey.h",
-                "yapi/src/ymemory.h",
-                "yapi/src/yprog.h",
-                "yapi/src/yproto.h",
-                "yapi/src/ytcp.h",
-                "yapi/src/ythread.h",
-                "yapi/src/yversion.h",
-                "yapi/src/yapi.c",
-                "yapi/src/yfifo.c",
-                "yapi/src/yhash.c",
-                "yapi/src/yjson.c",
-                "yapi/src/ykey.c",
-                "yapi/src/ymemory.c",
-                "yapi/src/ypkt_lin.c",
-                "yapi/src/ypkt_osx.c",
-                "yapi/src/ypkt_win.c",
-                "yapi/src/yprog.c",
-                "yapi/src/ystream.c",
-                "yapi/src/ytcp.c",
-                "yapi/src/ythread.c"
-            ],
-            "direct_dependent_settings": {
-                "include_dirs": [
-                    "yapi/src"
-                ]
-            },
-            "include_dirs": [
-                "yapi/src"
-            ],
-            "conditions": [
-                [
-                    "OS=='win'",
-                    {
-                        "defines!": [
-                            "_CRT_SECURE_NO_DEPRECATE"
-                        ]
-                    }
-                ]
-            ]
-        },
-        {
-            "target_name": "node_yoctopuce",
-            "sources": [
-                "src/node_yoctopuce.cc",
+	"targets":[
+		{
+			"target_name":"yapi",
+			"type":"static_library",
+			"sources":[
+				"yapi/Sources/yapi/yapi.h",
+				"yapi/Sources/yapi/ydef.h",
+				"yapi/Sources/yapi/yfifo.h",
+				"yapi/Sources/yapi/yhash.h",
+				"yapi/Sources/yapi/yjson.h",
+				"yapi/Sources/yapi/ykey.h",
+				"yapi/Sources/yapi/ymemory.h",
+				"yapi/Sources/yapi/yprog.h",
+				"yapi/Sources/yapi/yproto.h",
+				"yapi/Sources/yapi/ytcp.h",
+				"yapi/Sources/yapi/ythread.h",
+				"yapi/Sources/yapi/yversion.h",
+				"yapi/Sources/yapi/yapi.c",
+				"yapi/Sources/yapi/yfifo.c",
+				"yapi/Sources/yapi/yhash.c",
+				"yapi/Sources/yapi/yjson.c",
+				"yapi/Sources/yapi/ykey.c",
+				"yapi/Sources/yapi/ymemory.c",
+				"yapi/Sources/yapi/ypkt_lin.c",
+				"yapi/Sources/yapi/ypkt_osx.c",
+				"yapi/Sources/yapi/ypkt_win.c",
+				"yapi/Sources/yapi/yprog.c",
+				"yapi/Sources/yapi/ystream.c",
+				"yapi/Sources/yapi/ytcp.c",
+				"yapi/Sources/yapi/ythread.c"
+			],
+			"direct_dependent_settings":{
+				"include_dirs":[
+					"yapi/Sources/yapi/"
+				]
+			},
+			"include_dirs":[
+				"yapi/Sources/yapi/"
+			],
+			"conditions":[
+				[
+					"OS=='win'",
+					{
+						"defines!":[
+							"_CRT_SECURE_NO_DEPRECATE"
+						]
+					}
+				]
+			]
+		},
+		{
+			"target_name":"node_yoctopuce",
+			"sources":[
+				"src/node_yoctopuce.cc",
 				"src/yoctopuce.h",
 				"src/yoctopuce.cc",
-				"threading.h",
-				"async.h"
-            ],
-            "dependencies": [
-                "yapi"
-            ]
-        }
-    ]
+				"src/threading.h",
+				"src/async.h"
+			],
+			"dependencies":[
+				"yapi"
+			],
+			"cflags!":["-ansi", "-fno-exceptions" ],
+			"cflags_cc!":[ "-fno-exceptions" ],
+			"cflags":["-g", "-exceptions"],
+			"cflags_cc":["-g", "-exceptions"],
+			"configurations":{
+				"Release":{
+					"msvs_settings":{
+						"VCCLCompilerTool":{
+							"ExceptionHandling":1
+						}
+					}
+				}
+			}
+		}
+	]
 }
