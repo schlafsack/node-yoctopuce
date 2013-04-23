@@ -11,12 +11,6 @@
 		"type":"git",
 		"url":"git://github.com/schlafsack/node-yoctopuce.git"
 	},
-	"bundleDependencies":[ "yapi" ],
-	"scripts":{
-		"preupdate":"get-yapi.sh",
-		"preinstall":"get-yapi.sh",
-		"install":"install.sh"
-	},
 	"main":"./lib/node_yoctopuce.js",
 	"engines":{
 		"node":">=0.8.*"
@@ -24,6 +18,5 @@
 	"license":"MIT/X11",
 	"dependencies":{
 		"bindings":"*"
-	},
-	"devDependencies":{}
+	}
 }

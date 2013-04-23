@@ -4,39 +4,39 @@
 			"target_name":"yapi",
 			"type":"static_library",
 			"sources":[
-				"yapi/Sources/yapi/yapi.h",
-				"yapi/Sources/yapi/ydef.h",
-				"yapi/Sources/yapi/yfifo.h",
-				"yapi/Sources/yapi/yhash.h",
-				"yapi/Sources/yapi/yjson.h",
-				"yapi/Sources/yapi/ykey.h",
-				"yapi/Sources/yapi/ymemory.h",
-				"yapi/Sources/yapi/yprog.h",
-				"yapi/Sources/yapi/yproto.h",
-				"yapi/Sources/yapi/ytcp.h",
-				"yapi/Sources/yapi/ythread.h",
-				"yapi/Sources/yapi/yversion.h",
-				"yapi/Sources/yapi/yapi.c",
-				"yapi/Sources/yapi/yfifo.c",
-				"yapi/Sources/yapi/yhash.c",
-				"yapi/Sources/yapi/yjson.c",
-				"yapi/Sources/yapi/ykey.c",
-				"yapi/Sources/yapi/ymemory.c",
-				"yapi/Sources/yapi/ypkt_lin.c",
-				"yapi/Sources/yapi/ypkt_osx.c",
-				"yapi/Sources/yapi/ypkt_win.c",
-				"yapi/Sources/yapi/yprog.c",
-				"yapi/Sources/yapi/ystream.c",
-				"yapi/Sources/yapi/ytcp.c",
-				"yapi/Sources/yapi/ythread.c"
+				"src/yapi/yapi.h",
+				"src/yapi/ydef.h",
+				"src/yapi/yfifo.h",
+				"src/yapi/yhash.h",
+				"src/yapi/yjson.h",
+				"src/yapi/ykey.h",
+				"src/yapi/ymemory.h",
+				"src/yapi/yprog.h",
+				"src/yapi/yproto.h",
+				"src/yapi/ytcp.h",
+				"src/yapi/ythread.h",
+				"src/yapi/yversion.h",
+				"src/yapi/yapi.c",
+				"src/yapi/yfifo.c",
+				"src/yapi/yhash.c",
+				"src/yapi/yjson.c",
+				"src/yapi/ykey.c",
+				"src/yapi/ymemory.c",
+				"src/yapi/ypkt_lin.c",
+				"src/yapi/ypkt_osx.c",
+				"src/yapi/ypkt_win.c",
+				"src/yapi/yprog.c",
+				"src/yapi/ystream.c",
+				"src/yapi/ytcp.c",
+				"src/yapi/ythread.c"
 			],
 			"direct_dependent_settings":{
 				"include_dirs":[
-					"yapi/Sources/yapi/"
+					"src/yapi/"
 				]
 			},
 			"include_dirs":[
-				"yapi/Sources/yapi/"
+				"src/yapi/"
 			],
 			"conditions":[
 				[

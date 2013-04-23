@@ -39,8 +39,5 @@ idea
 #Project files
 [Bb]uild/
 
-#Dependencies
-yapi
-
 #Node files
 node_modules
