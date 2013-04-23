@@ -36,7 +36,7 @@ namespace node_yoctopuce
 
 		void fwdLogEvent(const char* log, u32 loglen)
 		{
-			if(Yoctopuce::log_event)
+			if(Yoctopuce::log_event && log)
 				Yoctopuce::log_event->send(std::string(log, loglen)); 
 		}
 
@@ -64,6 +64,12 @@ namespace node_yoctopuce
 				Yoctopuce::device_change_event->send(device);
 		}
 
+		void fwdFunctionChangeEvent(YAPI_FUNCTION fundescr, const char *value)
+		{
+			if(Yoctopuce::function_change_event && value)
+				Yoctopuce::function_change_event->send(std::string(value, YOCTO_PUBVAL_LEN)); 
+		}
+
 		static void uninit(void) 
 		{
 			Yoctopuce::Uninitialize();
@@ -87,6 +93,7 @@ namespace node_yoctopuce
 			yapiRegisterDeviceArrivalCallback(fwdDeviceArrivalEvent);
 			yapiRegisterDeviceRemovalCallback(fwdDeviceRemovalEvent);
 			yapiRegisterDeviceChangeCallback(fwdDeviceChangeEvent);
+			yapiRegisterFunctionUpdateCallback(fwdFunctionChangeEvent);
 
 			Yoctopuce::Initialize(target);
 

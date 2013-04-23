@@ -45,16 +45,18 @@ namespace node_yoctopuce
 	Persistent<Object> Yoctopuce::event_context;
 	Persistent<String> Yoctopuce::events_symbol;
 	Persistent<String> Yoctopuce::log_symbol;
-	Persistent<String> Yoctopuce::devicelog_symbol;
-	Persistent<String> Yoctopuce::devicearrival_symbol;
-	Persistent<String> Yoctopuce::deviceremoval_symbol;
-	Persistent<String> Yoctopuce::devicechange_symbol;
+	Persistent<String> Yoctopuce::device_log_symbol;
+	Persistent<String> Yoctopuce::device_arrival_symbol;
+	Persistent<String> Yoctopuce::device_removal_symbol;
+	Persistent<String> Yoctopuce::device_change_symbol;
+	Persistent<String> Yoctopuce::function_change_symbol;
 
 	Yoctopuce::AsyncLogCallback* Yoctopuce::log_event;
 	Yoctopuce::AsyncDeviceUpdateCallback* Yoctopuce::device_log_event;
 	Yoctopuce::AsyncDeviceUpdateCallback* Yoctopuce::device_arrival_event;
 	Yoctopuce::AsyncDeviceUpdateCallback* Yoctopuce::device_removal_event;
 	Yoctopuce::AsyncDeviceUpdateCallback* Yoctopuce::device_change_event;
+	Yoctopuce::AsyncFunctionChangeCallback* Yoctopuce::function_change_event;
 
 	void Yoctopuce::Initialize(Handle<Object> target)
 	{
@@ -63,17 +65,19 @@ namespace node_yoctopuce
 
 		events_symbol = NODE_PSYMBOL("events");
 		log_symbol = NODE_PSYMBOL("onLog");
-		devicelog_symbol = NODE_PSYMBOL("onDeviceLog");
-		devicearrival_symbol = NODE_PSYMBOL("onDeviceArrival");
-		deviceremoval_symbol = NODE_PSYMBOL("onDeviceRemoval");
-		devicechange_symbol = NODE_PSYMBOL("onDeviceChange");
+		device_log_symbol = NODE_PSYMBOL("onDeviceLog");
+		device_arrival_symbol = NODE_PSYMBOL("onDeviceArrival");
+		device_removal_symbol = NODE_PSYMBOL("onDeviceRemoval");
+		device_change_symbol = NODE_PSYMBOL("onDeviceChange");
+		function_change_symbol = NODE_PSYMBOL("onFunctionChange");
 
 		event_context = Persistent<Object>::New(Object::New());
 		event_context->Set(log_symbol, Function::New());
-		event_context->Set(devicelog_symbol, Function::New()); 
-		event_context->Set(devicearrival_symbol, Function::New()); 
-		event_context->Set(deviceremoval_symbol, Function::New()); 
-		event_context->Set(devicechange_symbol, Function::New()); 
+		event_context->Set(device_log_symbol, Function::New()); 
+		event_context->Set(device_arrival_symbol, Function::New()); 
+		event_context->Set(device_removal_symbol, Function::New()); 
+		event_context->Set(device_change_symbol, Function::New()); 
+		event_context->Set(function_change_symbol, Function::New());
 
 		target->Set(events_symbol, event_context);
 
@@ -86,6 +90,7 @@ namespace node_yoctopuce
 		device_arrival_event = new AsyncDeviceUpdateCallback(DeviceArrivalCallback);
 		device_removal_event = new AsyncDeviceUpdateCallback(DeviceRemovalCallback);
 		device_change_event = new AsyncDeviceUpdateCallback(DeviceChangeCallback);
+		function_change_event = new AsyncFunctionChangeCallback(FunctionChangeCallback);
 
 	}
 
@@ -115,6 +120,11 @@ namespace node_yoctopuce
 		{
 			device_change_event -> finish();
 			device_change_event = NULL;
+		}
+		if(function_change_event)
+		{
+			function_change_event -> finish();
+			function_change_event = NULL;
 		}
 	}
 
@@ -183,27 +193,36 @@ namespace node_yoctopuce
 	{
 		HandleScope scope;
 		Handle<Value> argv[1] = {Integer::New(device)};
-		EmitEvent(devicelog_symbol, 1, argv);
+		EmitEvent(device_log_symbol, 1, argv);
 	}
 
 	void Yoctopuce::DeviceArrivalCallback(YAPI_DEVICE device)
 	{
 		HandleScope scope;
 		Handle<Value> argv[1] = {Integer::New(device)};
-		EmitEvent(devicearrival_symbol, 1, argv);
+		EmitEvent(device_arrival_symbol, 1, argv);
 	}
 
 	void Yoctopuce::DeviceRemovalCallback(YAPI_DEVICE device)
 	{
 		HandleScope scope;
 		Handle<Value> argv[1] = {Integer::New(device)};
-		EmitEvent(deviceremoval_symbol, 1, argv);
+		EmitEvent(device_removal_symbol, 1, argv);
 	}
 
 	void Yoctopuce::DeviceChangeCallback(YAPI_DEVICE device)
 	{
 		HandleScope scope;
 		Handle<Value> argv[1] = {Integer::New(device)};
-		EmitEvent(devicechange_symbol, 1, argv);
+		EmitEvent(device_change_symbol, 1, argv);
+	}
+
+	void Yoctopuce::FunctionChangeCallback(std::string value)
+	{
+		value.erase(std::remove(value.begin(), value.end(), '\n'), value.end());
+		value.erase(std::remove(value.begin(), value.end(), '\r'), value.end());
+		HandleScope scope;
+		Handle<Value> argv[1] = {String::New(value.c_str())};
+		EmitEvent(function_change_symbol, 1, argv);
 	}
 }

@@ -36,7 +36,6 @@ using namespace node;
 
 namespace node_yoctopuce 
 {
-
 	class Yoctopuce : public ObjectWrap
 	{
 
@@ -47,23 +46,26 @@ namespace node_yoctopuce
 
 		typedef Async<std::string> AsyncLogCallback;
 		typedef Async<YAPI_DEVICE> AsyncDeviceUpdateCallback;
+		typedef Async<std::string> AsyncFunctionChangeCallback;
 
 		static AsyncLogCallback* log_event;
 		static AsyncDeviceUpdateCallback* device_log_event;
 		static AsyncDeviceUpdateCallback* device_arrival_event;
 		static AsyncDeviceUpdateCallback* device_removal_event;
 		static AsyncDeviceUpdateCallback* device_change_event;
+		static AsyncFunctionChangeCallback* function_change_event;
 
 	protected:	
 
 		static Persistent<Object> event_context;
-		
+
 		static Persistent<String> events_symbol;
 		static Persistent<String> log_symbol;
-		static Persistent<String> devicelog_symbol;
-		static Persistent<String> devicearrival_symbol;
-		static Persistent<String> deviceremoval_symbol;
-		static Persistent<String> devicechange_symbol;
+		static Persistent<String> device_log_symbol;
+		static Persistent<String> device_arrival_symbol;
+		static Persistent<String> device_removal_symbol;
+		static Persistent<String> device_change_symbol;
+		static Persistent<String> function_change_symbol;
 
 		static Handle<Value> UpdateDeviceList(const Arguments& args);
 		static Handle<Value> HandleEvents(const Arguments& args);
@@ -76,6 +78,7 @@ namespace node_yoctopuce
 		static void DeviceArrivalCallback(YAPI_DEVICE device);
 		static void DeviceRemovalCallback(YAPI_DEVICE device);
 		static void DeviceChangeCallback(YAPI_DEVICE device);
+		static void FunctionChangeCallback(std::string value);
 
 		Yoctopuce() {};
 

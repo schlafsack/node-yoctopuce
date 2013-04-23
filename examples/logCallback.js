@@ -26,6 +26,11 @@ yoctopuce.events.onDeviceChange = function (message)
     util.log(util.format("Device Change %d.", message));
 };
 
+yoctopuce.events.onFunctionChange = function (message)
+{
+    util.log(util.format("Function Change %d.", message));
+};
+
 util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
 
 util.print("Use Ctrl-C to quit.\n");
