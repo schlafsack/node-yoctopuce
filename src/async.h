@@ -16,13 +16,13 @@ namespace node_yoctopuce
 	// Generic uv_async handler.
 	template <class Item> class Async 
 	{
-		typedef void (*Callback)(Item item);
+		typedef void (*Callback)(Item* item);
 
 	protected:
 
 		uv_async_t watcher;
 		NODE_YOCTOPUCE_MUTEX_t 
-		std::vector<Item> data;
+		std::vector<Item*> data;
 		Callback callback;
 
 	public:
@@ -37,7 +37,7 @@ namespace node_yoctopuce
 		static void listener(uv_async_t* handle, int status) 
 		{
 			Async* async = static_cast<Async*>(handle->data);
-			std::vector<Item> rows;
+			std::vector<Item*> rows;
 			NODE_YOCTOPUCE_MUTEX_LOCK(&async->mutex) 
 			rows.swap(async->data);
 			NODE_YOCTOPUCE_MUTEX_UNLOCK(&async->mutex)
@@ -70,7 +70,7 @@ namespace node_yoctopuce
 			uv_close((uv_handle_t*)&watcher, close);
 		}
 
-		void add(Item item) 
+		void add(Item* item) 
 		{
 			// Make sure node runs long enough to deliver the messages.
 			#if NODE_VERSION_AT_LEAST(0, 7, 9)
@@ -88,7 +88,7 @@ namespace node_yoctopuce
 			uv_async_send(&watcher);
 		}
 
-		void send(Item item) 
+		void send(Item* item) 
 		{
 			add(item);
 			send();

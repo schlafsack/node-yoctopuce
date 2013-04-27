@@ -24,11 +24,11 @@
 
 #include <v8.h>
 #include <node.h>
-#include <stdio.h>
 #include <string>
 #include <stdlib.h>
 
 #include "yoctopuce.h"
+#include "events.h"
 
 namespace node_yoctopuce
 {
@@ -36,38 +36,56 @@ namespace node_yoctopuce
 
 		void fwdLogEvent(const char* log, u32 loglen)
 		{
-			if(Yoctopuce::log_event && log)
-				Yoctopuce::log_event->send(std::string(log, loglen)); 
+			if(Yoctopuce::eventHandler)
+			{
+				Event* ev = new LogEvent(log);
+				Yoctopuce::eventHandler->send(ev);
+			}
 		}
 
 		void fwdDeviceLogEvent(YAPI_DEVICE device)
 		{
-			if(Yoctopuce::device_log_event)
-				Yoctopuce::device_log_event->send(device); 
+			if(Yoctopuce::eventHandler)
+			{
+				Event* ev = new DeviceLogEvent(device);
+				Yoctopuce::eventHandler->send(ev);
+			}
 		}
 
 		void fwdDeviceArrivalEvent(YAPI_DEVICE device)
 		{
-			if(Yoctopuce::device_arrival_event)
-				Yoctopuce::device_arrival_event->send(device);
+			if(Yoctopuce::eventHandler)
+			{
+				Event* ev = new DeviceArrivalEvent(device);
+				Yoctopuce::eventHandler->send(ev);
+			}
 		}
 
 		void fwdDeviceRemovalEvent(YAPI_DEVICE device)
 		{
-			if(Yoctopuce::device_removal_event)
-				Yoctopuce::device_removal_event->send(device);
+			if(Yoctopuce::eventHandler)
+			{
+				Event* ev = new DeviceRemovalEvent(device);
+				Yoctopuce::eventHandler->send(ev);
+			}
 		}
 
 		void fwdDeviceChangeEvent(YAPI_DEVICE device)
 		{
-			if(Yoctopuce::device_change_event)
-				Yoctopuce::device_change_event->send(device);
+			if(Yoctopuce::eventHandler)
+			{
+				Event* ev = new DeviceChangeEvent(device);
+				Yoctopuce::eventHandler->send(ev);
+			}
 		}
 
-		void fwdFunctionChangeEvent(YAPI_FUNCTION fundescr, const char *value)
+		void fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *value)
 		{
-			if(Yoctopuce::function_change_event && value)
-				Yoctopuce::function_change_event->send(std::string(value, YOCTO_PUBVAL_LEN)); 
+			if(Yoctopuce::eventHandler)
+			{
+				Event* ev = new FunctionUpdateEvent(fundescr, value);
+				Yoctopuce::eventHandler->send(ev);
+			}
 		}
 
 		static void uninit(void) 
@@ -88,14 +106,15 @@ namespace node_yoctopuce
 				abort();
 			}
 
+			
+			Yoctopuce::Initialize(target);
+
 			yapiRegisterLogFunction(fwdLogEvent);
 			yapiRegisterDeviceLogCallback(fwdDeviceLogEvent);
 			yapiRegisterDeviceArrivalCallback(fwdDeviceArrivalEvent);
 			yapiRegisterDeviceRemovalCallback(fwdDeviceRemovalEvent);
 			yapiRegisterDeviceChangeCallback(fwdDeviceChangeEvent);
-			yapiRegisterFunctionUpdateCallback(fwdFunctionChangeEvent);
-
-			Yoctopuce::Initialize(target);
+			yapiRegisterFunctionUpdateCallback(fwdFunctionUpdateEvent);
 
 		}
 

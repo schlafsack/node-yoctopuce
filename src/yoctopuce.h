@@ -30,6 +30,7 @@
 #include <yapi.h>
 
 #include "async.h"
+#include "events.h"
 
 using namespace v8;
 using namespace node;
@@ -44,41 +45,19 @@ namespace node_yoctopuce
 		static void Initialize(Handle<Object> target);
 		static void Uninitialize();
 
-		typedef Async<std::string> AsyncLogCallback;
-		typedef Async<YAPI_DEVICE> AsyncDeviceUpdateCallback;
-		typedef Async<std::string> AsyncFunctionChangeCallback;
+		typedef Async<Event> AsyncEventHandler;
+		static AsyncEventHandler* eventHandler;
 
-		static AsyncLogCallback* log_event;
-		static AsyncDeviceUpdateCallback* device_log_event;
-		static AsyncDeviceUpdateCallback* device_arrival_event;
-		static AsyncDeviceUpdateCallback* device_removal_event;
-		static AsyncDeviceUpdateCallback* device_change_event;
-		static AsyncFunctionChangeCallback* function_change_event;
 
 	protected:	
 
-		static Persistent<Object> event_context;
-
-		static Persistent<String> events_symbol;
-		static Persistent<String> log_symbol;
-		static Persistent<String> device_log_symbol;
-		static Persistent<String> device_arrival_symbol;
-		static Persistent<String> device_removal_symbol;
-		static Persistent<String> device_change_symbol;
-		static Persistent<String> function_change_symbol;
+		static Persistent<Object> targetHandle;
 
 		static Handle<Value> UpdateDeviceList(const Arguments& args);
 		static Handle<Value> HandleEvents(const Arguments& args);
 		static Handle<Value> GetDeviceInfo(const Arguments& args);
 
-		static void EmitEvent(Handle<String>eventName, int argc, Handle<Value> args[]);
-
-		static void LogCallback(std::string log);
-		static void DeviceLogCallback(YAPI_DEVICE device);
-		static void DeviceArrivalCallback(YAPI_DEVICE device);
-		static void DeviceRemovalCallback(YAPI_DEVICE device);
-		static void DeviceChangeCallback(YAPI_DEVICE device);
-		static void FunctionChangeCallback(std::string value);
+		static void EventCallback(Event *event);
 
 		Yoctopuce() {};
 
