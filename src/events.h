@@ -1,3 +1,4 @@
+
 // -*- C++ -*-
 //
 // Copyright (c) 2013, Tom Greasley <tom@greasley.com>
@@ -22,100 +23,117 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#ifndef NODE_YOCTOPUCE_EVENTS_H
-#define NODE_YOCTOPUCE_EVENTS_H
+#ifndef SRC_EVENTS_H_
+#define SRC_EVENTS_H_
 
-
-#include <algorithm>
-#include <string>
 #include <v8.h>
 #include <node.h>
 #include <yapi.h>
+#include <algorithm>
+#include <string>
 
-using namespace v8;
-using namespace node;
+
+
+using v8::Handle;
+using v8::Local;
+using v8::Object;
+using v8::String;
+using v8::Integer;
+using v8::Value;
+using v8::Function;
+using v8::TryCatch;
+using v8::HandleScope;
+
+using node::FatalException;
+
 using std::string;
 
-#define EMIT_EVENT(obj, argc, argv)	TRY_CATCH_CALL((obj), Local<Function>::Cast((obj)->Get(String::NewSymbol("emit"))),	argc, argv);
-#define TRY_CATCH_CALL(context, callback, argc, argv) {	TryCatch try_catch; (callback)->Call((context), (argc), (argv)); if (try_catch.HasCaught()) { FatalException(try_catch); } }
+namespace node_yoctopuce {
 
-namespace node_yoctopuce 
-{
+    struct Event {
+        inline virtual void send(Handle<Object> context)=0;
+        void emit(Handle<Object> context, int argc, Handle<Value> argv[]) {
+            HandleScope scope;
+            Local<Value> emitValue = context->Get(String::NewSymbol("emit"));
+            Local<Function> emitFunction = Local<Function>::Cast(emitValue);
+            {
+                TryCatch try_catch;
+                emitFunction->Call(context, argc, argv);
+                if (try_catch.HasCaught()) {
+                    FatalException(try_catch);
+                }
+            }
+        }
+    };
 
-	struct Event
-	{
-		inline virtual void send(Handle<Object> context)=0;
-	};
+    struct CharDataEvent : Event {
+        explicit inline CharDataEvent(const char *_data) {
+            data = _data ? string(_data) : string();
+        }
+        string data;
+    };
 
-	struct CharDataEvent : Event 
-	{
-		inline CharDataEvent(const char *_data) {
-			data = _data ? string(_data) : string();
-		}
-		
-		string data;
+    struct DeviceEvent : Event {
+        explicit inline DeviceEvent(const char* name, YAPI_DEVICE device)
+            : device(device), name(name) {}
+        const char* name;
+        YAPI_DEVICE device;
+        inline virtual void send(Handle<Object> context) {
+            int argc = 2;
+            Handle<Value> argv[2] = {String::New(name), Integer::New(device)};
+            emit(context, argc, argv);
+        }
+    };
 
-	};
+    struct LogEvent : CharDataEvent {
+        explicit inline LogEvent(const char *data)
+            : CharDataEvent(data) {}
+        inline virtual void send(Handle<Object> context) {
+            int argc = 2;
+            string log = string(data);
+            log.erase(std::remove(log.begin(), log.end(), '\n'), log.end());
+            log.erase(std::remove(log.begin(), log.end(), '\r'), log.end());
+            Handle<Value> argv[2] =
+                {String::New("log"),
+                 String::New(log.c_str())};
+            emit(context, argc, argv);
+        }
+    };
 
-	struct DeviceEvent : Event
-	{
-		inline DeviceEvent(const char* name, YAPI_DEVICE device) : device(device), name(name) {}
-		
-		const char* name;
-		YAPI_DEVICE device;
+    struct DeviceLogEvent : DeviceEvent {
+        explicit inline DeviceLogEvent(YAPI_DEVICE device)
+            : DeviceEvent("deviceLog", device) {}
+    };
 
-		inline virtual void send(Handle<Object> context) {
-			int argc = 2;
-			Handle<Value> argv[2] = {String::New(name), Integer::New(device)};
-			EMIT_EVENT(context, argc, argv); 
-		}
-	};
+    struct DeviceArrivalEvent : DeviceEvent {
+        explicit inline DeviceArrivalEvent(YAPI_DEVICE device)
+            : DeviceEvent("deviceArrival", device) {}
+    };
 
-	struct LogEvent : CharDataEvent
-	{
-		inline LogEvent(const char *data) : CharDataEvent(data) {}
+    struct DeviceChangeEvent : DeviceEvent {
+        explicit inline DeviceChangeEvent(YAPI_DEVICE device)
+            : DeviceEvent("deviceChange", device) {}
+    };
 
-		inline virtual void send(Handle<Object> context) {
-			int argc = 2;
-			string log = string(data);
-			log.erase(std::remove(log.begin(), log.end(), '\n'), log.end());
-			log.erase(std::remove(log.begin(), log.end(), '\r'), log.end());
-			Handle<Value> argv[2] = {String::New("log"), String::New(log.c_str())};
-			EMIT_EVENT(context, argc, argv); 
-		}
+    struct DeviceRemovalEvent : DeviceEvent {
+        explicit inline DeviceRemovalEvent(YAPI_DEVICE device)
+            : DeviceEvent("deviceRemoval", device) {}
+    };
 
-	};
+    struct FunctionUpdateEvent : CharDataEvent {
+        explicit inline FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data) // NOLINT
+            : CharDataEvent(data), fundescr(fundescr) {}
+        YAPI_FUNCTION fundescr;
+        inline virtual void send(Handle<Object> context) {
+            int argc = 3;
+            Handle<Value> argv[3] =
+                {String::New("functionUpdate"),
+                 Integer::New(fundescr),
+                 String::New(data.c_str())};
+            emit(context, argc, argv);
+        }
+    };
 
-	struct DeviceLogEvent : DeviceEvent {
-		inline DeviceLogEvent(YAPI_DEVICE device) : DeviceEvent("deviceLog", device) {}
-	};
+}  // namespace node_yoctopuce
 
-	struct DeviceArrivalEvent : DeviceEvent {
-		inline DeviceArrivalEvent(YAPI_DEVICE device) : DeviceEvent("deviceArrival", device) {}
-	};
-
-	struct DeviceChangeEvent : DeviceEvent {
-		inline DeviceChangeEvent(YAPI_DEVICE device) : DeviceEvent("deviceChange", device) {}
-	};
-
-	struct DeviceRemovalEvent : DeviceEvent {
-		inline DeviceRemovalEvent(YAPI_DEVICE device) : DeviceEvent("deviceRemoval", device) {}
-	};
-
-
-	struct FunctionUpdateEvent : CharDataEvent
-	{
-		inline FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data) : CharDataEvent(data), fundescr(fundescr) {};
-
-		YAPI_FUNCTION fundescr;
-
-		inline virtual void send(Handle<Object> context) {
-			int argc = 3;
-			Handle<Value> argv[3] = {String::New("functionUpdate"), Integer::New(fundescr), String::New(data.c_str())};
-			EMIT_EVENT(context, argc, argv); 
-		}
-	};
-
-}
-
-#endif
+#endif  // SRC_EVENTS_H_

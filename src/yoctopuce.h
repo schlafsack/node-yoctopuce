@@ -1,3 +1,4 @@
+
 // -*- C++ -*-
 //
 // Copyright (c) 2013, Tom Greasley <tom@greasley.com>
@@ -22,46 +23,50 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#ifndef NODE_YOCTOPUCE_H
-#define NODE_YOCTOPUCE_H
+#ifndef SRC_YOCTOPUCE_H_
+#define SRC_YOCTOPUCE_H_
 
 #include <v8.h>
 #include <node.h>
 #include <yapi.h>
 
-#include "async.h"
-#include "events.h"
+#include "./async.h"
+#include "./events.h"
 
-using namespace v8;
-using namespace node;
+using v8::Handle;
+using v8::Persistent;
+using v8::Arguments;
 
-namespace node_yoctopuce 
-{
-	class Yoctopuce : public ObjectWrap
-	{
+using node::ObjectWrap;
 
-	public:
+namespace node_yoctopuce {
 
-		static void Initialize(Handle<Object> target);
-		static void Uninitialize();
+    class Yoctopuce : public ObjectWrap {
+    public:
+        static void Initialize(Handle<Object> target);
+        static void Uninitialize();
 
-		typedef Async<Event> AsyncEventHandler;
-		static AsyncEventHandler* eventHandler;
+    protected:
+        static Persistent<Object> targetHandle;
 
+        //  API Calls
+        static Handle<Value> UpdateDeviceList(const Arguments& args);
+        static Handle<Value> HandleEvents(const Arguments& args);
+        static Handle<Value> GetDeviceInfo(const Arguments& args);
 
-	protected:	
+        //  Events
+        typedef Async<Event> AsyncEventHandler;
+        static AsyncEventHandler* eventHandler;
+        static void EventCallback(Event *event);
+        static void fwdLogEvent(const char* log, u32 loglen);
+        static void fwdDeviceLogEvent(YAPI_DEVICE device);
+        static void fwdDeviceArrivalEvent(YAPI_DEVICE device);
+        static void fwdDeviceRemovalEvent(YAPI_DEVICE device);
+        static void fwdDeviceChangeEvent(YAPI_DEVICE device);
+        static void fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr,
+                                           const char *value);
+    };
 
-		static Persistent<Object> targetHandle;
+}  // namespace node_yoctopuce
 
-		static Handle<Value> UpdateDeviceList(const Arguments& args);
-		static Handle<Value> HandleEvents(const Arguments& args);
-		static Handle<Value> GetDeviceInfo(const Arguments& args);
-
-		static void EventCallback(Event *event);
-
-		Yoctopuce() {};
-
-	};
-}
-
-#endif
+#endif  // SRC_YOCTOPUCE_H_

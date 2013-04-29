@@ -56,7 +56,8 @@
 				"src/yoctopuce.h",
 				"src/yoctopuce.cc",
 				"src/threading.h",
-				"src/async.h"
+				"src/async.h",
+				"src/events.h"
 			],
 			"dependencies":[
 				"yapi"

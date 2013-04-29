@@ -1,3 +1,4 @@
+
 // -*- C++ -*-
 //
 // Copyright (c) 2013, Tom Greasley <tom@greasley.com>
@@ -24,101 +25,36 @@
 
 #include <v8.h>
 #include <node.h>
-#include <string>
 #include <stdlib.h>
 
-#include "yoctopuce.h"
-#include "events.h"
+#include "./yoctopuce.h"
 
-namespace node_yoctopuce
-{
-	extern "C" {
+using v8::Handle;
 
-		void fwdLogEvent(const char* log, u32 loglen)
-		{
-			if(Yoctopuce::eventHandler)
-			{
-				Event* ev = new LogEvent(log);
-				Yoctopuce::eventHandler->send(ev);
-			}
-		}
+namespace node_yoctopuce {
 
-		void fwdDeviceLogEvent(YAPI_DEVICE device)
-		{
-			if(Yoctopuce::eventHandler)
-			{
-				Event* ev = new DeviceLogEvent(device);
-				Yoctopuce::eventHandler->send(ev);
-			}
-		}
+    extern "C" {
+        static void unInit(void) {
+            Yoctopuce::Uninitialize();
+            yapiFreeAPI();
+        }
 
-		void fwdDeviceArrivalEvent(YAPI_DEVICE device)
-		{
-			if(Yoctopuce::eventHandler)
-			{
-				Event* ev = new DeviceArrivalEvent(device);
-				Yoctopuce::eventHandler->send(ev);
-			}
-		}
+        static void initYapi() {
+            char errmsg[YOCTO_ERRMSG_LEN];
+            if (yapiInitAPI(Y_DETECT_USB, errmsg) != YAPI_SUCCESS
+                || yapiUpdateDeviceList(true, errmsg) != YAPI_SUCCESS) {
+                fprintf(stderr, "Unable to initialize yapi.%s\n", errmsg);
+                abort();
+            }
+        }
 
-		void fwdDeviceRemovalEvent(YAPI_DEVICE device)
-		{
-			if(Yoctopuce::eventHandler)
-			{
-				Event* ev = new DeviceRemovalEvent(device);
-				Yoctopuce::eventHandler->send(ev);
-			}
-		}
+        static void init(Handle<Object> target) {
+            initYapi();
+            atexit(unInit);
+            Yoctopuce::Initialize(target);
+        }
 
-		void fwdDeviceChangeEvent(YAPI_DEVICE device)
-		{
-			if(Yoctopuce::eventHandler)
-			{
-				Event* ev = new DeviceChangeEvent(device);
-				Yoctopuce::eventHandler->send(ev);
-			}
-		}
+        NODE_MODULE(node_yoctopuce, init);
+    }
 
-		void fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *value)
-		{
-			if(Yoctopuce::eventHandler)
-			{
-				Event* ev = new FunctionUpdateEvent(fundescr, value);
-				Yoctopuce::eventHandler->send(ev);
-			}
-		}
-
-		static void uninit(void) 
-		{
-			Yoctopuce::Uninitialize();
-			yapiFreeAPI();
-		}
-
-		static void init (Handle<Object> target)
-		{
-			atexit(uninit);
-
-			char errmsg[YOCTO_ERRMSG_LEN];
-			if(yapiInitAPI(Y_DETECT_USB,errmsg) != YAPI_SUCCESS
-				|| yapiUpdateDeviceList(true, errmsg) != YAPI_SUCCESS)
-			{
-				fprintf(stderr, "Unable to initialize yapi.%s\n", errmsg);
-				abort();
-			}
-
-			
-			Yoctopuce::Initialize(target);
-
-			yapiRegisterLogFunction(fwdLogEvent);
-			yapiRegisterDeviceLogCallback(fwdDeviceLogEvent);
-			yapiRegisterDeviceArrivalCallback(fwdDeviceArrivalEvent);
-			yapiRegisterDeviceRemovalCallback(fwdDeviceRemovalEvent);
-			yapiRegisterDeviceChangeCallback(fwdDeviceChangeEvent);
-			yapiRegisterFunctionUpdateCallback(fwdFunctionUpdateEvent);
-
-		}
-
-		NODE_MODULE(node_yoctopuce, init);
-
-	}
-}
+}  // namespace node_yoctopuce
