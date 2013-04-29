@@ -4,3 +4,4 @@ node_js:
 before_install:
  - sudo apt-get update -qq
  - sudo apt-get install -qq libusb-1.0-0 libusb-1.0-0-dev
+ 
