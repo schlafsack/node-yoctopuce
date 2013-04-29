@@ -1,4 +1,4 @@
-
+﻿
 // -*- C++ -*-
 //
 // Copyright (c) 2013, Tom Greasley <tom@greasley.com>
