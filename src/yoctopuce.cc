@@ -68,6 +68,7 @@ namespace node_yoctopuce {
             eventHandler -> finish();
             eventHandler = NULL;
         }
+        delete eventHandler;
     }
 
     Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args) {
@@ -105,10 +106,10 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::EventCallback(Event *event) {
-        HandleScope scope;
         if (!targetHandle.IsEmpty()) {
             event->send(targetHandle);
         }
+        delete event;
     }
 
     void Yoctopuce::fwdLogEvent(const char* log, u32 loglen) {

@@ -1,4 +1,4 @@
-﻿{
+{
 	"name":"node-yoctopuce",
 	"description":"Yoctopuce device access library",
 	"version":"0.1.0",

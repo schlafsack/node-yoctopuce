@@ -32,8 +32,6 @@
 #include <algorithm>
 #include <string>
 
-
-
 using v8::Handle;
 using v8::Local;
 using v8::Object;
