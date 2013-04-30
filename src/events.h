@@ -62,6 +62,7 @@ namespace node_yoctopuce {
                 }
             }
         }
+        virtual ~Event() {}
     };
 
     struct CharDataEvent : Event {
