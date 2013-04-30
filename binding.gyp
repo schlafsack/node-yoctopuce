@@ -39,14 +39,21 @@
 				"src/yapi/"
 			],
 			"conditions":[
-				[
-					"OS=='win'",
-					{
-						"defines!":[
-							"_CRT_SECURE_NO_DEPRECATE"
-						]
-					}
-				]
+				[ "OS=='win'", {
+					"defines!":[
+						"_CRT_SECURE_NO_DEPRECATE"
+					]
+				}],
+				[ "OS=='mac'", {
+					"include_dirs+":[
+						"/usr/include/libusb-1.0/"
+					]
+				}],
+				[ "OS=='linux'", {
+					"include_dirs+":[
+						"/usr/include/libusb-1.0/"
+					]
+				}]
 			]
 		},
 		{
