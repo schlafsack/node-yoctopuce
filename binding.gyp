@@ -52,6 +52,9 @@
 				[ "OS=='linux'", {
 					"include_dirs+":[
 						"/usr/include/libusb-1.0/"
+					],
+					"libraries":[
+						"-lusb-1.0"
 					]
 				}]
 			]
