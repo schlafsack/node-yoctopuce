@@ -44,17 +44,9 @@
 						"_CRT_SECURE_NO_DEPRECATE"
 					]
 				}],
-				[ "OS=='mac'", {
-					"include_dirs+":[
-						"/usr/include/libusb-1.0/"
-					]
-				}],
 				[ "OS=='linux'", {
 					"include_dirs+":[
 						"/usr/include/libusb-1.0/"
-					],
-					"libraries":[
-						"-lusb-1.0"
 					]
 				}]
 			]
@@ -71,6 +63,13 @@
 			],
 			"dependencies":[
 				"yapi"
+			],
+			"conditions":[
+				[ "OS=='linux'", {
+					"libraries":[
+						"-lusb-1.0"
+					]
+				}]
 			],
 			"cflags!":["-ansi", "-fno-exceptions" ],
 			"cflags_cc!":[ "-fno-exceptions" ],
