@@ -39,14 +39,16 @@
 				"src/yapi/"
 			],
 			"conditions":[
-				[
-					"OS=='win'",
-					{
-						"defines!":[
-							"_CRT_SECURE_NO_DEPRECATE"
-						]
-					}
-				]
+				[ "OS=='win'", {
+					"defines!":[
+						"_CRT_SECURE_NO_DEPRECATE"
+					]
+				}],
+				[ "OS=='linux'", {
+					"include_dirs+":[
+						"/usr/include/libusb-1.0/"
+					]
+				}]
 			]
 		},
 		{
@@ -60,6 +62,13 @@
 			],
 			"dependencies":[
 				"yapi"
+			],
+			"conditions":[
+				[ "OS=='linux'", {
+					"libraries":[
+						"-lusb-1.0"
+					]
+				}]
 			],
 			"cflags!":["-ansi", "-fno-exceptions" ],
 			"cflags_cc!":[ "-fno-exceptions" ],

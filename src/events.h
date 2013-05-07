@@ -49,7 +49,7 @@ using std::string;
 namespace node_yoctopuce {
 
     struct Event {
-        inline virtual void send(Handle<Object> context)=0;
+        virtual void send(Handle<Object> context)=0;
         void emit(Handle<Object> context, int argc, Handle<Value> argv[]) {
             HandleScope scope;
             Local<Value> emitValue = context->Get(String::NewSymbol("emit"));
@@ -62,7 +62,7 @@ namespace node_yoctopuce {
                 }
             }
         }
-		virtual ~Event() {};
+        virtual ~Event() {}
     };
 
     struct CharDataEvent : Event {
@@ -74,7 +74,7 @@ namespace node_yoctopuce {
 
     struct DeviceEvent : Event {
         explicit inline DeviceEvent(const char* name, YAPI_DEVICE device)
-            : device(device), name(name) {}
+            : name(name), device(device) {}
         const char* name;
         YAPI_DEVICE device;
         inline virtual void send(Handle<Object> context) {
