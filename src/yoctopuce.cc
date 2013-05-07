@@ -66,9 +66,9 @@ namespace node_yoctopuce {
     void Yoctopuce::Uninitialize() {
         if (eventHandler) {
             eventHandler -> finish();
-            eventHandler = NULL;
-        }
-        delete eventHandler;
+			delete eventHandler;
+		}
+        
     }
 
     Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args) {

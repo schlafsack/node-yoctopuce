@@ -35,13 +35,23 @@ yoctopuce.on("functionUpdate", function (func, message)
 
 util.print("use ctrl-c to quit.\n");
 
-setInterval(function ()
+var updateDeviceListInterval = setInterval(function ()
 {
     yoctopuce.updateDeviceList();
     util.log("device list updated.");
 }, 5000);
 
-setInterval(function ()
+var handleEventsInterval = setInterval(function ()
 {
     yoctopuce.handleEvents();
 }, 500);
+
+process.on('SIGINT', function ()
+{
+    clearInterval(updateDeviceListInterval);
+    clearInterval(handleEventsInterval);
+    util.log("node-yoctopuce has shutdown.");
+    process.abort();
+});
+
+

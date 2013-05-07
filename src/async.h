@@ -11,7 +11,8 @@
 #include <node_version.h>
 #include <vector>
 
-#include "./threading.h"
+using std::vector;
+using std::size_t;
 
 namespace node_yoctopuce {
 
@@ -20,33 +21,27 @@ namespace node_yoctopuce {
         typedef void (*Callback)(Item* item);
 
     protected:
-        uv_async_t watcher;
-
-        NODE_YOCTOPUCE_MUTEX_t;
-        std::vector<Item*> data;
-
+		uv_mutex_t mutex;
+		uv_async_t watcher;
+        vector<Item*> data;
         Callback callback;
 
     public:
         explicit Async(Callback cb_) : callback(cb_) {
             watcher.data = this;
-            NODE_YOCTOPUCE_MUTEX_INIT;
+            uv_mutex_init(&mutex);
             uv_async_init(uv_default_loop(), &watcher, listener);
         }
 
         static void listener(uv_async_t* handle, int status) {
             Async* async = static_cast<Async*>(handle->data);
-            std::vector<Item*> rows;
-            NODE_YOCTOPUCE_MUTEX_LOCK(&async->mutex);
-            rows.swap(async->data);
-            NODE_YOCTOPUCE_MUTEX_UNLOCK(&async->mutex);
-            for (std::size_t i = 0, size = rows.size(); i < size; i++) {
-            #if NODE_VERSION_AT_LEAST(0, 7, 9)
+            vector<Item*> items;
+            uv_mutex_lock(&async->mutex);
+            items.swap(async->data);
+            uv_mutex_unlock(&async->mutex);
+            for (size_t i = 0, size = items.size(); i < size; i++) {
                 uv_unref(reinterpret_cast<uv_handle_t*>(&async->watcher));
-            #else
-                uv_unref(uv_default_loop());
-            #endif
-                async->callback(rows[i]);
+                async->callback(items[i]);
             }
         }
 
@@ -68,14 +63,10 @@ namespace node_yoctopuce {
 
         void add(Item* item) {
             // Make sure node runs long enough to deliver the messages.
-            #if NODE_VERSION_AT_LEAST(0, 7, 9)
-                uv_ref(reinterpret_cast<uv_handle_t*>(&watcher));
-            #else
-                uv_ref(uv_default_loop());
-            #endif
-            NODE_YOCTOPUCE_MUTEX_LOCK(&mutex);
+            uv_ref(reinterpret_cast<uv_handle_t*>(&watcher));
+			uv_mutex_lock(&mutex);
             data.push_back(item);
-            NODE_YOCTOPUCE_MUTEX_UNLOCK(&mutex)
+            uv_mutex_unlock(&mutex);
         }
 
         void send() {
@@ -87,8 +78,8 @@ namespace node_yoctopuce {
             send();
         }
 
-        ~Async() {
-            NODE_YOCTOPUCE_MUTEX_DESTROY
+		~Async() {
+            uv_mutex_destroy(&mutex);
         }
     };
 

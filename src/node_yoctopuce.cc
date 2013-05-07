@@ -23,9 +23,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+#include <stdlib.h>
 #include <v8.h>
 #include <node.h>
-#include <stdlib.h>
 
 #include "./yoctopuce.h"
 
@@ -33,28 +33,29 @@ using v8::Handle;
 
 namespace node_yoctopuce {
 
-    extern "C" {
-        static void unInit(void) {
-            Yoctopuce::Uninitialize();
-            yapiFreeAPI();
-        }
+	extern "C" {
+		static void unInit(void) {
+			Yoctopuce::Uninitialize();
+			yapiFreeAPI();
+			_CrtDumpMemoryLeaks();
+		}
 
-        static void initYapi() {
-            char errmsg[YOCTO_ERRMSG_LEN];
-            if (yapiInitAPI(Y_DETECT_USB, errmsg) != YAPI_SUCCESS
-                || yapiUpdateDeviceList(true, errmsg) != YAPI_SUCCESS) {
-                fprintf(stderr, "Unable to initialize yapi.%s\n", errmsg);
-                abort();
-            }
-        }
+		static void initYapi() {
+			char errmsg[YOCTO_ERRMSG_LEN];
+			if (yapiInitAPI(Y_DETECT_USB, errmsg) != YAPI_SUCCESS
+				|| yapiUpdateDeviceList(true, errmsg) != YAPI_SUCCESS) {
+					fprintf(stderr, "Unable to initialize yapi.%s\n", errmsg);
+					abort();
+			}
+		}
 
-        static void init(Handle<Object> target) {
-            initYapi();
-            atexit(unInit);
-            Yoctopuce::Initialize(target);
-        }
+		static void init(Handle<Object> target) {
+			initYapi();
+			atexit(unInit);
+			Yoctopuce::Initialize(target);
+		}
 
-        NODE_MODULE(node_yoctopuce, init);
-    }
+		NODE_MODULE(node_yoctopuce, init);
+	}
 
 }  // namespace node_yoctopuce

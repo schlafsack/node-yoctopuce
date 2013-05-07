@@ -55,7 +55,6 @@
 				"src/node_yoctopuce.cc",
 				"src/yoctopuce.h",
 				"src/yoctopuce.cc",
-				"src/threading.h",
 				"src/async.h",
 				"src/events.h"
 			],
