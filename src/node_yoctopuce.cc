@@ -37,7 +37,6 @@ namespace node_yoctopuce {
 		static void unInit(void) {
 			Yoctopuce::Uninitialize();
 			yapiFreeAPI();
-			_CrtDumpMemoryLeaks();
 		}
 
 		static void initYapi() {
