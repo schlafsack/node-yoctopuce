@@ -66,9 +66,8 @@ namespace node_yoctopuce {
     void Yoctopuce::Uninitialize() {
         if (eventHandler) {
             eventHandler -> finish();
-			delete eventHandler;
-		}
-        
+            delete eventHandler;
+        }
     }
 
     Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args) {
@@ -148,11 +147,11 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr,
-                                           const char *value) {
-        if (Yoctopuce::eventHandler) {
-            Event* ev = new FunctionUpdateEvent(fundescr, value);
-            Yoctopuce::eventHandler->send(ev);
-        }
+        const char *value) {
+            if (Yoctopuce::eventHandler) {
+                Event* ev = new FunctionUpdateEvent(fundescr, value);
+                Yoctopuce::eventHandler->send(ev);
+            }
     }
 
 }  // namespace node_yoctopuce

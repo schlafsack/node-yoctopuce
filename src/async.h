@@ -21,8 +21,8 @@ namespace node_yoctopuce {
         typedef void (*Callback)(Item* item);
 
     protected:
-		uv_mutex_t mutex;
-		uv_async_t watcher;
+        uv_mutex_t mutex;
+        uv_async_t watcher;
         vector<Item*> data;
         Callback callback;
 
@@ -64,7 +64,7 @@ namespace node_yoctopuce {
         void add(Item* item) {
             // Make sure node runs long enough to deliver the messages.
             uv_ref(reinterpret_cast<uv_handle_t*>(&watcher));
-			uv_mutex_lock(&mutex);
+            uv_mutex_lock(&mutex);
             data.push_back(item);
             uv_mutex_unlock(&mutex);
         }
@@ -78,7 +78,7 @@ namespace node_yoctopuce {
             send();
         }
 
-		~Async() {
+        ~Async() {
             uv_mutex_destroy(&mutex);
         }
     };
