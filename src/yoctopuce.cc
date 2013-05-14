@@ -1,4 +1,4 @@
-﻿﻿
+﻿
 // -*- C++ -*-
 //
 // Copyright (c) 2013, Tom Greasley <tom@greasley.com>
@@ -40,6 +40,7 @@ using v8::Undefined;
 using v8::ThrowException;
 
 using std::queue;
+using std::swap;
 
 namespace node_yoctopuce {
 
@@ -132,7 +133,7 @@ namespace node_yoctopuce {
         HandleScope scope;
         queue<Event*> events;
         uv_mutex_lock(&eventQueueMutex);
-        events.swap(eventQueue);
+        swap(eventQueue, events);
         uv_mutex_unlock(&eventQueueMutex);
         while (!events.empty()) {
             Event* event = events.front();
