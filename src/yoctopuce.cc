@@ -57,10 +57,8 @@ namespace node_yoctopuce {
         NODE_SET_METHOD(targetHandle, "handleEvents", HandleEvents);
         NODE_SET_METHOD(targetHandle, "getDeviceInfo", GetDeviceInfo);
 
-        // Set up the event queue;
-        uv_mutex_init(&Yoctopuce::eventQueueMutex);
-
-        // Register event callbacks
+        // Set up to handle device events
+        uv_mutex_init(&eventQueueMutex);
         yapiRegisterLogFunction(fwdLogEvent);
         yapiRegisterDeviceLogCallback(fwdDeviceLogEvent);
         yapiRegisterDeviceArrivalCallback(fwdDeviceArrivalEvent);
@@ -76,7 +74,9 @@ namespace node_yoctopuce {
         yapiRegisterDeviceRemovalCallback(NULL);
         yapiRegisterDeviceChangeCallback(NULL);
         yapiRegisterFunctionUpdateCallback(NULL);
-        uv_mutex_destroy(&Yoctopuce::eventQueueMutex);
+        emitEvents();
+        uv_mutex_destroy(&eventQueueMutex);
+        targetHandle.Clear();
     }
 
     Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args) {
@@ -123,13 +123,23 @@ namespace node_yoctopuce {
         EventBaton* baton = new EventBaton();
         baton->async.data = baton;
         uv_async_init(uv_default_loop(), &baton->async, onEventCallback);
+        
+        // Ensure that node stays alive long enough to process the event;
+        uv_handle_t* handle = reinterpret_cast<uv_handle_t*>(&baton->async);
+        uv_ref(handle);
 
         // Wake up UV.
         uv_async_send(&baton->async);
     }
 
     void Yoctopuce::onEventCallback(uv_async_t *async, int status) {
-        // Send the events.
+        EventBaton *baton = static_cast<EventBaton*>(async->data);
+        uv_handle_t* handle = reinterpret_cast<uv_handle_t*>(&baton->async);
+        uv_close(handle, afterEventCallback);
+        emitEvents();
+    }
+
+    void Yoctopuce::emitEvents() {
         HandleScope scope;
         queue<Event*> events;
         uv_mutex_lock(&eventQueueMutex);
@@ -143,15 +153,12 @@ namespace node_yoctopuce {
             }
             delete event;
         }
-
-        // Clean up the baton.
-        EventBaton *baton = static_cast<EventBaton*>(async->data);
-        uv_handle_t* handle = reinterpret_cast<uv_handle_t*>(&baton->async);
-        uv_close(handle, afterEventCallback);
     }
 
     void Yoctopuce::afterEventCallback(uv_handle_t* handle) {
         EventBaton *baton = static_cast<EventBaton*>(handle->data);
+        uv_handle_t* async = reinterpret_cast<uv_handle_t*>(&baton->async);
+        uv_unref(async);
         delete baton;
     }
 

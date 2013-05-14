@@ -58,9 +58,11 @@ namespace node_yoctopuce {
         //  Events
         static uv_mutex_t eventQueueMutex;
         static queue<Event*> eventQueue;
-        static void fwdEvent(Event* event);
         static void onEventCallback(uv_async_t *async, int status);
+        static void emitEvents();
         static void afterEventCallback(uv_handle_t *handle);
+
+        static void fwdEvent(Event* event);
         static void fwdLogEvent(const char* log, u32 loglen);
         static void fwdDeviceLogEvent(YAPI_DEVICE device);
         static void fwdDeviceArrivalEvent(YAPI_DEVICE device);
