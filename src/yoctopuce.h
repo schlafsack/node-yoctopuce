@@ -30,13 +30,14 @@
 #include <node.h>
 #include <yapi.h>
 
-#include "./async.h"
+#include <queue>
+
 #include "./events.h"
 
 using v8::Handle;
 using v8::Persistent;
 using v8::Arguments;
-
+using std::queue;
 using node::ObjectWrap;
 
 namespace node_yoctopuce {
@@ -55,16 +56,18 @@ namespace node_yoctopuce {
         static Handle<Value> GetDeviceInfo(const Arguments& args);
 
         //  Events
-        typedef Async<Event> AsyncEventHandler;
-        static AsyncEventHandler* eventHandler;
-        static void EventCallback(Event *event);
+        static uv_mutex_t eventQueueMutex;
+        static queue<Event*> eventQueue;
+        static void fwdEvent(Event* event);
+        static void onEventCallback(uv_async_t *async, int status);
+        static void afterEventCallback(uv_handle_t *handle);
         static void fwdLogEvent(const char* log, u32 loglen);
         static void fwdDeviceLogEvent(YAPI_DEVICE device);
         static void fwdDeviceArrivalEvent(YAPI_DEVICE device);
         static void fwdDeviceRemovalEvent(YAPI_DEVICE device);
         static void fwdDeviceChangeEvent(YAPI_DEVICE device);
         static void fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr,
-                                           const char *value);
+            const char *value);
     };
 
 }  // namespace node_yoctopuce

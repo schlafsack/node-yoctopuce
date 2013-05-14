@@ -1,35 +1,31 @@
 {
-	"name":"node-yoctopuce",
-	"description":"Yoctopuce device access library",
-	"version":"0.1.0",
-	"author":{
-		"name":"Tom Greasley",
-		"email":"tom@greasley.com",
-		"url":"https://github.com/schlafsack"
-	},
-	"repository":{
-		"type":"git",
-		"url":"git://github.com/schlafsack/node-yoctopuce.git"
-	},
-	"main":"./lib/node_yoctopuce.js",
-	"engines":{
-		"node":">=0.8.*"
-	},
-	"licenses":[
-		{
-			"type":"MIT/X11",
-			"url":"https://github.com/schlafsack/node-yoctopuce/blob/master/LICENCE"
-		},
-		{
-			"type":"BSD",
-			"url":"https://github.com/developmentseed/node-sqlite3/blob/master/LICENSE"
-		},
-		{
-			"type":"Custom",
-			"url":"https://github.com/yoctopuce/yoctolib_cpp/blob/master/README.txt"
-		}
-	],
-	"dependencies":{
-		"bindings":"*"
-	}
+    "name":"node-yoctopuce",
+    "description":"Yoctopuce device access library",
+    "version":"0.1.0",
+    "author":{
+        "name":"Tom Greasley",
+        "email":"tom@greasley.com",
+        "url":"https://github.com/schlafsack"
+    },
+    "repository":{
+        "type":"git",
+        "url":"git://github.com/schlafsack/node-yoctopuce.git"
+    },
+    "main":"./lib/node_yoctopuce.js",
+    "engines":{
+        "node":">=0.8.*"
+    },
+    "licenses":[
+        {
+            "type":"MIT/X11",
+            "url":"https://github.com/schlafsack/node-yoctopuce/blob/master/LICENCE"
+        },
+        {
+            "type":"Custom",
+            "url":"https://github.com/yoctopuce/yoctolib_cpp/blob/master/README.txt"
+        }
+    ],
+    "dependencies":{
+        "bindings":"*"
+    }
 }

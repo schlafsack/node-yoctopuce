@@ -27,8 +27,9 @@
 #include <node.h>
 #include <v8.h>
 
+#include <queue>
+
 #include "./yoctopuce.h"
-#include "./async.h"
 #include "./events.h"
 
 using v8::HandleScope;
@@ -38,11 +39,13 @@ using v8::String;
 using v8::Undefined;
 using v8::ThrowException;
 
+using std::queue;
+
 namespace node_yoctopuce {
 
     Persistent<Object> Yoctopuce::targetHandle;
-
-    Yoctopuce::AsyncEventHandler* Yoctopuce::eventHandler;
+    uv_mutex_t Yoctopuce::eventQueueMutex;
+    queue<Event*> Yoctopuce::eventQueue;
 
     void Yoctopuce::Initialize(Handle<Object> target) {
         HandleScope scope;
@@ -53,8 +56,10 @@ namespace node_yoctopuce {
         NODE_SET_METHOD(targetHandle, "handleEvents", HandleEvents);
         NODE_SET_METHOD(targetHandle, "getDeviceInfo", GetDeviceInfo);
 
+        // Set up the event queue;
+        uv_mutex_init(&Yoctopuce::eventQueueMutex);
+
         // Register event callbacks
-        eventHandler = new AsyncEventHandler(EventCallback);
         yapiRegisterLogFunction(fwdLogEvent);
         yapiRegisterDeviceLogCallback(fwdDeviceLogEvent);
         yapiRegisterDeviceArrivalCallback(fwdDeviceArrivalEvent);
@@ -64,11 +69,13 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::Uninitialize() {
-        if (eventHandler) {
-            eventHandler -> finish();
-			delete eventHandler;
-		}
-        
+        yapiRegisterLogFunction(NULL);
+        yapiRegisterDeviceLogCallback(NULL);
+        yapiRegisterDeviceArrivalCallback(NULL);
+        yapiRegisterDeviceRemovalCallback(NULL);
+        yapiRegisterDeviceChangeCallback(NULL);
+        yapiRegisterFunctionUpdateCallback(NULL);
+        uv_mutex_destroy(&Yoctopuce::eventQueueMutex);
     }
 
     Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args) {
@@ -105,54 +112,77 @@ namespace node_yoctopuce {
         return scope.Close(Undefined());
     }
 
-    void Yoctopuce::EventCallback(Event *event) {
-        if (!targetHandle.IsEmpty()) {
-            event->send(targetHandle);
+    void Yoctopuce::fwdEvent(Event* event) {
+        // Add the event to the queue.
+        uv_mutex_lock(&eventQueueMutex);
+        eventQueue.push(event);
+        uv_mutex_unlock(&eventQueueMutex);
+
+        // Prepare the baton.
+        EventBaton* baton = new EventBaton();
+        baton->async.data = baton;
+        uv_async_init(uv_default_loop(), &baton->async, onEventCallback);
+
+        // Wake up UV.
+        uv_async_send(&baton->async);
+    }
+
+    void Yoctopuce::onEventCallback(uv_async_t *async, int status) {
+        // Send the events.
+        HandleScope scope;
+        queue<Event*> events;
+        uv_mutex_lock(&eventQueueMutex);
+        events.swap(eventQueue);
+        uv_mutex_unlock(&eventQueueMutex);
+        while (!events.empty()) {
+            Event* event = events.front();
+            events.pop();
+            if (!targetHandle.IsEmpty()) {
+                event->send(targetHandle);
+            }
+            delete event;
         }
-        delete event;
+
+        // Clean up the baton.
+        EventBaton *baton = static_cast<EventBaton*>(async->data);
+        uv_handle_t* handle = reinterpret_cast<uv_handle_t*>(&baton->async);
+        uv_close(handle, afterEventCallback);
+    }
+
+    void Yoctopuce::afterEventCallback(uv_handle_t* handle) {
+        EventBaton *baton = static_cast<EventBaton*>(handle->data);
+        delete baton;
     }
 
     void Yoctopuce::fwdLogEvent(const char* log, u32 loglen) {
-        if (Yoctopuce::eventHandler) {
-            Event* ev = new LogEvent(log);
-            Yoctopuce::eventHandler->send(ev);
-        }
+        Event* ev = new LogEvent(log);
+        fwdEvent(ev);
     }
 
     void Yoctopuce::fwdDeviceLogEvent(YAPI_DEVICE device) {
-        if (Yoctopuce::eventHandler) {
-            Event* ev = new DeviceLogEvent(device);
-            Yoctopuce::eventHandler->send(ev);
-        }
+        Event* ev = new DeviceLogEvent(device);
+        fwdEvent(ev);
     }
 
     void Yoctopuce::fwdDeviceArrivalEvent(YAPI_DEVICE device) {
-        if (Yoctopuce::eventHandler) {
-            Event* ev = new DeviceArrivalEvent(device);
-            Yoctopuce::eventHandler->send(ev);
-        }
+        Event* ev = new DeviceArrivalEvent(device);
+        fwdEvent(ev);
     }
 
     void Yoctopuce::fwdDeviceRemovalEvent(YAPI_DEVICE device) {
-        if (Yoctopuce::eventHandler) {
-            Event* ev = new DeviceRemovalEvent(device);
-            Yoctopuce::eventHandler->send(ev);
-        }
+        Event* ev = new DeviceRemovalEvent(device);
+        fwdEvent(ev);
     }
 
     void Yoctopuce::fwdDeviceChangeEvent(YAPI_DEVICE device) {
-        if (Yoctopuce::eventHandler) {
-            Event* ev = new DeviceChangeEvent(device);
-            Yoctopuce::eventHandler->send(ev);
-        }
+        Event* ev = new DeviceChangeEvent(device);
+        fwdEvent(ev);
     }
 
     void Yoctopuce::fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr,
-                                           const char *value) {
-        if (Yoctopuce::eventHandler) {
+        const char *value) {
             Event* ev = new FunctionUpdateEvent(fundescr, value);
-            Yoctopuce::eventHandler->send(ev);
-        }
+            fwdEvent(ev);
     }
 
 }  // namespace node_yoctopuce

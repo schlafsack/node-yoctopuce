@@ -48,6 +48,11 @@ using std::string;
 
 namespace node_yoctopuce {
 
+    struct EventBaton {
+        uv_async_t async;
+        ~EventBaton() {}
+    };
+
     struct Event {
         virtual void send(Handle<Object> context)=0;
         void emit(Handle<Object> context, int argc, Handle<Value> argv[]) {
@@ -93,8 +98,8 @@ namespace node_yoctopuce {
             log.erase(std::remove(log.begin(), log.end(), '\n'), log.end());
             log.erase(std::remove(log.begin(), log.end(), '\r'), log.end());
             Handle<Value> argv[2] =
-                {String::New("log"),
-                 String::New(log.c_str())};
+            {String::New("log"),
+            String::New(log.c_str())};
             emit(context, argc, argv);
         }
     };
@@ -126,9 +131,9 @@ namespace node_yoctopuce {
         inline virtual void send(Handle<Object> context) {
             int argc = 3;
             Handle<Value> argv[3] =
-                {String::New("functionUpdate"),
-                 Integer::New(fundescr),
-                 String::New(data.c_str())};
+            {String::New("functionUpdate"),
+            Integer::New(fundescr),
+            String::New(data.c_str())};
             emit(context, argc, argv);
         }
     };
