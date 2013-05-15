@@ -13,5 +13,4 @@ process.on('SIGINT', function ()
 {
     clearInterval(updateDeviceListInterval);
     util.log("node-yoctopuce has shutdown.");
-    process.exit();
 });
