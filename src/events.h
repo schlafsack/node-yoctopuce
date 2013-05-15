@@ -49,24 +49,47 @@ using std::string;
 namespace node_yoctopuce {
 
     struct Event {
-        virtual void send(Handle<Object> context)=0;
-        void emit(Handle<Object> context, int argc, Handle<Value> argv[]) {
+        uv_mutex_t dispatch_mutex;
+        uv_cond_t dispatch_cond;
+
+        explicit inline Event() {
+            uv_mutex_init(&dispatch_mutex);
+            uv_cond_init(&dispatch_cond); 
+        }
+
+        virtual void dispatch(Handle<Object> context)=0;
+
+        void dispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]) {
             HandleScope scope;
-            Local<Value> emitValue = context->Get(String::NewSymbol("emit"));
-            Local<Function> emitFunction = Local<Function>::Cast(emitValue);
-            {
-                TryCatch try_catch;
-                emitFunction->Call(context, argc, argv);
-                if (try_catch.HasCaught()) {
-                    FatalException(try_catch);
-                }
+            Local<Value> dispatchValue = context->Get(String::NewSymbol("emit"));
+            Local<Function> dispatchFunction = Local<Function>::Cast(dispatchValue);
+            TryCatch try_catch;
+            dispatchFunction->Call(context, argc, argv);
+            if (try_catch.HasCaught()) {
+                FatalException(try_catch);
             }
         }
-        virtual ~Event() {}
+
+        void signalDispatch() {
+            uv_mutex_lock(&dispatch_mutex);
+            uv_cond_signal(&dispatch_cond); 
+            uv_mutex_unlock(&dispatch_mutex);
+        }
+
+        void waitOnDispatch() {
+            uv_mutex_lock(&dispatch_mutex);
+            uv_cond_wait(&dispatch_cond, &dispatch_mutex); 
+            uv_mutex_unlock(&dispatch_mutex);
+        }
+
+        virtual ~Event() {
+            uv_cond_destroy(&dispatch_cond);
+            uv_mutex_destroy(&dispatch_mutex);
+        }
     };
 
     struct CharDataEvent : Event {
-        explicit inline CharDataEvent(const char *_data) {
+        explicit inline CharDataEvent(const char *_data) : Event() {
             data = _data ? string(_data) : string();
         }
         string data;
@@ -74,20 +97,20 @@ namespace node_yoctopuce {
 
     struct DeviceEvent : Event {
         explicit inline DeviceEvent(const char* name, YAPI_DEVICE device)
-            : name(name), device(device) {}
+            : Event(), name(name), device(device) {}
         const char* name;
         YAPI_DEVICE device;
-        inline virtual void send(Handle<Object> context) {
+        inline virtual void dispatch(Handle<Object> context) {
             int argc = 2;
             Handle<Value> argv[2] = {String::New(name), Integer::New(device)};
-            emit(context, argc, argv);
+            dispatchToV8(context, argc, argv);
         }
     };
 
     struct LogEvent : CharDataEvent {
         explicit inline LogEvent(const char *data)
             : CharDataEvent(data) {}
-        inline virtual void send(Handle<Object> context) {
+        inline virtual void dispatch(Handle<Object> context) {
             int argc = 2;
             string log = string(data);
             log.erase(std::remove(log.begin(), log.end(), '\n'), log.end());
@@ -95,7 +118,7 @@ namespace node_yoctopuce {
             Handle<Value> argv[2] =
             {String::New("log"),
             String::New(log.c_str())};
-            emit(context, argc, argv);
+            dispatchToV8(context, argc, argv);
         }
     };
 
@@ -123,13 +146,13 @@ namespace node_yoctopuce {
         explicit inline FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data) // NOLINT
             : CharDataEvent(data), fundescr(fundescr) {}
         YAPI_FUNCTION fundescr;
-        inline virtual void send(Handle<Object> context) {
+        inline virtual void dispatch(Handle<Object> context) {
             int argc = 3;
             Handle<Value> argv[3] =
             {String::New("functionUpdate"),
             Integer::New(fundescr),
             String::New(data.c_str())};
-            emit(context, argc, argv);
+            dispatchToV8(context, argc, argv);
         }
     };
 
