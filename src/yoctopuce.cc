@@ -26,6 +26,7 @@
 #include <yapi.h>
 #include <node.h>
 #include <v8.h>
+#include <uv.h>
 
 #include <queue>
 
@@ -44,7 +45,7 @@ using std::swap;
 
 namespace node_yoctopuce {
 
-    Persistent<Object> Yoctopuce::targetHandle;
+    Persistent<Object> Yoctopuce::g_targetHandle;
     queue<Event*> Yoctopuce::g_event_queue;
     unsigned long Yoctopuce::g_main_thread_id;
     uv_mutex_t Yoctopuce::g_event_queue_mutex;
@@ -54,10 +55,10 @@ namespace node_yoctopuce {
         HandleScope scope;
 
         // Expose API methods
-        targetHandle = Persistent<Object>::New(target);
-        NODE_SET_METHOD(targetHandle, "updateDeviceList", UpdateDeviceList);
-        NODE_SET_METHOD(targetHandle, "handleEvents", HandleEvents);
-        NODE_SET_METHOD(targetHandle, "getDeviceInfo", GetDeviceInfo);
+        g_targetHandle = Persistent<Object>::New(target);
+        NODE_SET_METHOD(g_targetHandle, "updateDeviceList", UpdateDeviceList);
+        NODE_SET_METHOD(g_targetHandle, "handleEvents", HandleEvents);
+        NODE_SET_METHOD(g_targetHandle, "getDeviceInfo", GetDeviceInfo);
 
         // Set up the event queue
         g_main_thread_id = uv_thread_self();
@@ -75,8 +76,6 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::Uninitialize() {
-        HandleScope scope;
-
         // Stop receiving events
         yapiRegisterLogFunction(NULL);
         yapiRegisterDeviceLogCallback(NULL);
@@ -88,7 +87,7 @@ namespace node_yoctopuce {
         // Clean up
         uv_close(reinterpret_cast<uv_handle_t*>(&g_event_async), NULL);
         uv_mutex_destroy(&g_event_queue_mutex);
-        targetHandle.Clear();
+        g_targetHandle.Clear();
     }
 
     Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args) {
@@ -152,9 +151,7 @@ namespace node_yoctopuce {
     void Yoctopuce::fwdEvent(Event* event) {
         // Dispatch the event if we are already on the main thread
         if(g_main_thread_id == uv_thread_self()) {
-            if(!targetHandle.IsEmpty()) {
-                event->dispatch(targetHandle);
-            }
+            dispatchEvent(event);
         } else {
             // Otherwise push it to the queue
             uv_mutex_lock(&g_event_queue_mutex);
@@ -181,8 +178,6 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::dispatchEvents() {
-        HandleScope scope;
-
         // Dequeue the events.
         queue<Event*> events;
         uv_mutex_lock(&g_event_queue_mutex);
@@ -191,13 +186,16 @@ namespace node_yoctopuce {
 
         // Dispatch the events and signal any waiting threads to continue
         while(!events.empty()) {
-            Event *event = events.front();
+            dispatchEvent(events.front());
             events.pop();
-            if(!targetHandle.IsEmpty()) {
-                event->dispatch(targetHandle);
-            }
-            event->signalDispatch();
         }
+    }
+
+    void Yoctopuce::dispatchEvent(Event* event) {
+        if(!g_targetHandle.IsEmpty()) {
+            event->dispatch(g_targetHandle);
+        }
+        event->signalDispatch();
     }
 
 }  // namespace node_yoctopuce

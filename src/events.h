@@ -27,6 +27,7 @@
 #define SRC_EVENTS_H_
 
 #include <v8.h>
+#include <uv.h>
 #include <node.h>
 #include <yapi.h>
 #include <algorithm>

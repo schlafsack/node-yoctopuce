@@ -27,6 +27,7 @@
 #define SRC_YOCTOPUCE_H_
 
 #include <v8.h>
+#include <uv.h>
 #include <node.h>
 #include <yapi.h>
 
@@ -50,8 +51,6 @@ namespace node_yoctopuce {
         static void Uninitialize();
 
     protected:
-        static Persistent<Object> targetHandle;
-
         //  API Calls
         static Handle<Value> UpdateDeviceList(const Arguments& args);
         static Handle<Value> HandleEvents(const Arguments& args);
@@ -67,9 +66,11 @@ namespace node_yoctopuce {
         static void fwdEvent(Event* event);
         static void onEventCallback(uv_async_t *async, int status);
         static void dispatchEvents();
+        static void dispatchEvent(Event* event);
 
     private:
         static unsigned long g_main_thread_id;
+        static Persistent<Object> g_targetHandle;
         static uv_mutex_t g_event_queue_mutex;
         static queue<Event*> g_event_queue;
         static uv_async_t g_event_async;
