@@ -45,8 +45,6 @@ using std::swap;
 namespace node_yoctopuce {
 
     Persistent<Object> Yoctopuce::targetHandle;
-    uv_mutex_t Yoctopuce::eventQueueMutex;
-    queue<Event*> Yoctopuce::eventQueue;
 
     void Yoctopuce::Initialize(Handle<Object> target) {
         HandleScope scope;
@@ -58,7 +56,6 @@ namespace node_yoctopuce {
         NODE_SET_METHOD(targetHandle, "getDeviceInfo", GetDeviceInfo);
 
         // Set up to handle device events
-        uv_mutex_init(&eventQueueMutex);
         yapiRegisterLogFunction(fwdLogEvent);
         yapiRegisterDeviceLogCallback(fwdDeviceLogEvent);
         yapiRegisterDeviceArrivalCallback(fwdDeviceArrivalEvent);
@@ -74,8 +71,6 @@ namespace node_yoctopuce {
         yapiRegisterDeviceRemovalCallback(NULL);
         yapiRegisterDeviceChangeCallback(NULL);
         yapiRegisterFunctionUpdateCallback(NULL);
-        emitEvents();
-        uv_mutex_destroy(&eventQueueMutex);
         targetHandle.Clear();
     }
 
@@ -114,51 +109,25 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::fwdEvent(Event* event) {
-        // Add the event to the queue.
-        uv_mutex_lock(&eventQueueMutex);
-        eventQueue.push(event);
-        uv_mutex_unlock(&eventQueueMutex);
-
-        // Prepare the baton.
         EventBaton* baton = new EventBaton();
+        baton->event = event;
         baton->async.data = baton;
         uv_async_init(uv_default_loop(), &baton->async, onEventCallback);
-        
-        // Ensure that node stays alive long enough to process the event;
-        uv_handle_t* handle = reinterpret_cast<uv_handle_t*>(&baton->async);
-        uv_ref(handle);
-
-        // Wake up UV.
         uv_async_send(&baton->async);
     }
 
     void Yoctopuce::onEventCallback(uv_async_t *async, int status) {
         EventBaton *baton = static_cast<EventBaton*>(async->data);
+        if (!targetHandle.IsEmpty()) {
+            baton->event->send(targetHandle);
+        }
         uv_handle_t* handle = reinterpret_cast<uv_handle_t*>(&baton->async);
         uv_close(handle, afterEventCallback);
-        emitEvents();
-    }
-
-    void Yoctopuce::emitEvents() {
-        HandleScope scope;
-        queue<Event*> events;
-        uv_mutex_lock(&eventQueueMutex);
-        swap(eventQueue, events);
-        uv_mutex_unlock(&eventQueueMutex);
-        while (!events.empty()) {
-            Event* event = events.front();
-            events.pop();
-            if (!targetHandle.IsEmpty()) {
-                event->send(targetHandle);
-            }
-            delete event;
-        }
     }
 
     void Yoctopuce::afterEventCallback(uv_handle_t* handle) {
         EventBaton *baton = static_cast<EventBaton*>(handle->data);
-        uv_handle_t* async = reinterpret_cast<uv_handle_t*>(&baton->async);
-        uv_unref(async);
+        delete baton->event;
         delete baton;
     }
 

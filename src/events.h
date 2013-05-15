@@ -48,11 +48,6 @@ using std::string;
 
 namespace node_yoctopuce {
 
-    struct EventBaton {
-        uv_async_t async;
-        ~EventBaton() {}
-    };
-
     struct Event {
         virtual void send(Handle<Object> context)=0;
         void emit(Handle<Object> context, int argc, Handle<Value> argv[]) {
@@ -136,6 +131,12 @@ namespace node_yoctopuce {
             String::New(data.c_str())};
             emit(context, argc, argv);
         }
+    };
+
+    struct EventBaton {
+        uv_async_t async;
+        Event* event;
+        ~EventBaton() {}
     };
 
 }  // namespace node_yoctopuce

@@ -56,10 +56,7 @@ namespace node_yoctopuce {
         static Handle<Value> GetDeviceInfo(const Arguments& args);
 
         //  Events
-        static uv_mutex_t eventQueueMutex;
-        static queue<Event*> eventQueue;
         static void onEventCallback(uv_async_t *async, int status);
-        static void emitEvents();
         static void afterEventCallback(uv_handle_t *handle);
 
         static void fwdEvent(Event* event);
