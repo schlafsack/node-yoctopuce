@@ -27,7 +27,6 @@
 #define SRC_EVENTS_H_
 
 #include <v8.h>
-#include <uv.h>
 #include <node.h>
 #include <yapi.h>
 #include <algorithm>
@@ -116,9 +115,7 @@ namespace node_yoctopuce {
             string log = string(data);
             log.erase(std::remove(log.begin(), log.end(), '\n'), log.end());
             log.erase(std::remove(log.begin(), log.end(), '\r'), log.end());
-            Handle<Value> argv[2] =
-            {String::New("log"),
-            String::New(log.c_str())};
+            Handle<Value> argv[2] = {String::New("log"), String::New(log.c_str())};
             dispatchToV8(context, argc, argv);
         }
     };
@@ -150,9 +147,7 @@ namespace node_yoctopuce {
         inline virtual void dispatch(Handle<Object> context) {
             int argc = 3;
             Handle<Value> argv[3] =
-            {String::New("functionUpdate"),
-            Integer::New(fundescr),
-            String::New(data.c_str())};
+            {String::New("functionUpdate"), Integer::New(fundescr), String::New(data.c_str())};
             dispatchToV8(context, argc, argv);
         }
     };

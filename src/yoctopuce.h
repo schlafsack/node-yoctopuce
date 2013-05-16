@@ -27,7 +27,6 @@
 #define SRC_YOCTOPUCE_H_
 
 #include <v8.h>
-#include <uv.h>
 #include <node.h>
 #include <yapi.h>
 
