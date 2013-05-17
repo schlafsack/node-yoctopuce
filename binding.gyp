@@ -35,9 +35,6 @@
 					"src/yapi/"
 				]
 			},
-			"include_dirs":[
-				"src/yapi/"
-			],
 			"conditions":[
 				[ "OS=='win'", {
 					"defines!":[
