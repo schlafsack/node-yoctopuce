@@ -53,8 +53,9 @@ namespace node_yoctopuce {
     void Yoctopuce::Initialize(Handle<Object> target) {
         HandleScope scope;
 
-        // Expose API methods
         g_targetHandle = Persistent<Object>::New(target);
+
+        // Expose API methods
         NODE_SET_METHOD(g_targetHandle, "updateDeviceList", UpdateDeviceList);
         NODE_SET_METHOD(g_targetHandle, "handleEvents", HandleEvents);
         NODE_SET_METHOD(g_targetHandle, "getDeviceInfo", GetDeviceInfo);
