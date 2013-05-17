@@ -37,7 +37,9 @@
 using v8::Handle;
 using v8::Persistent;
 using v8::Arguments;
+
 using std::queue;
+
 using node::ObjectWrap;
 
 namespace node_yoctopuce {
@@ -48,25 +50,29 @@ namespace node_yoctopuce {
         static void Uninitialize();
 
     protected:
-        static Persistent<Object> targetHandle;
-
         //  API Calls
         static Handle<Value> UpdateDeviceList(const Arguments& args);
         static Handle<Value> HandleEvents(const Arguments& args);
         static Handle<Value> GetDeviceInfo(const Arguments& args);
 
         //  Events
-        static void onEventCallback(uv_async_t *async, int status);
-        static void afterEventCallback(uv_handle_t *handle);
-
-        static void fwdEvent(Event* event);
         static void fwdLogEvent(const char* log, u32 loglen);
         static void fwdDeviceLogEvent(YAPI_DEVICE device);
         static void fwdDeviceArrivalEvent(YAPI_DEVICE device);
         static void fwdDeviceRemovalEvent(YAPI_DEVICE device);
         static void fwdDeviceChangeEvent(YAPI_DEVICE device);
-        static void fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr,
-            const char *value);
+        static void fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *value);
+        static void fwdEvent(Event* event);
+        static void onEventCallback(uv_async_t *async, int status);
+        static void dispatchEvents();
+        static void dispatchEvent(Event* event);
+
+    private:
+        static unsigned long g_main_thread_id;
+        static Persistent<Object> g_targetHandle;
+        static uv_mutex_t g_event_queue_mutex;
+        static queue<Event*> g_event_queue;
+        static uv_async_t g_event_async;
     };
 
 }  // namespace node_yoctopuce
