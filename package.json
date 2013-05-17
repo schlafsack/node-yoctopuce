@@ -13,7 +13,7 @@
     },
     "main":"./lib/node_yoctopuce.js",
     "engines":{
-        "node":">=0.8.*"
+        "node":">=0.9.3"
     },
     "licenses":[
         {
