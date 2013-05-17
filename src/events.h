@@ -61,19 +61,23 @@ namespace node_yoctopuce {
 
         void dispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]) {
             HandleScope scope;
-            Local<Value> dispatchValue = context->Get(String::NewSymbol("emit"));
-            
-            // If the emit function has been bound call it; otherwise
-            // drop the events.
-            if(!dispatchValue.IsEmpty() && dispatchValue->IsFunction())
+            if(!context.IsEmpty())
             {
-                Local<Function> dispatchFunction = Local<Function>::Cast(dispatchValue);
-                TryCatch try_catch;
-                dispatchFunction->Call(context, argc, argv);
-                if (try_catch.HasCaught()) {
-                    FatalException(try_catch);
+                Local<Value> dispatchValue = context->Get(String::NewSymbol("emit"));
+
+                // If the emit function has been bound call it; otherwise
+                // drop the events.
+                if(!dispatchValue.IsEmpty() && dispatchValue->IsFunction())
+                {
+                    Local<Function> dispatchFunction = Local<Function>::Cast(dispatchValue);
+                    TryCatch try_catch;
+                    dispatchFunction->Call(context, argc, argv);
+                    if (try_catch.HasCaught()) {
+                        FatalException(try_catch);
+                    }
                 }
             }
+            signalDispatch();
         }
 
         void signalDispatch() {
@@ -101,18 +105,6 @@ namespace node_yoctopuce {
         string data;
     };
 
-    struct DeviceEvent : Event {
-        explicit inline DeviceEvent(const char* name, YAPI_DEVICE device)
-            : Event(), name(name), device(device) {}
-        const char* name;
-        YAPI_DEVICE device;
-        inline virtual void dispatch(Handle<Object> context) {
-            int argc = 2;
-            Handle<Value> argv[2] = {String::New(name), Integer::New(device)};
-            dispatchToV8(context, argc, argv);
-        }
-    };
-
     struct LogEvent : CharDataEvent {
         explicit inline LogEvent(const char *data)
             : CharDataEvent(data) {}
@@ -121,7 +113,31 @@ namespace node_yoctopuce {
             string log = string(data);
             log.erase(std::remove(log.begin(), log.end(), '\n'), log.end());
             log.erase(std::remove(log.begin(), log.end(), '\r'), log.end());
-            Handle<Value> argv[2] = {String::New("log"), String::New(log.c_str())};
+            Handle<Value> argv[2] = {String::NewSymbol("log"), String::New(log.c_str())};
+            dispatchToV8(context, argc, argv);
+        }
+    };
+
+    struct FunctionUpdateEvent : CharDataEvent {
+        explicit inline FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data)
+            : CharDataEvent(data), fundescr(fundescr) {}
+        YAPI_FUNCTION fundescr;
+        inline virtual void dispatch(Handle<Object> context) {
+            int argc = 3;
+            Handle<Value> argv[3] =
+            {String::NewSymbol("functionUpdate"), Integer::New(fundescr), String::New(data.c_str())};
+            dispatchToV8(context, argc, argv);
+        }
+    };
+
+    struct DeviceEvent : Event {
+        explicit inline DeviceEvent(const char* name, YAPI_DEVICE device)
+            : Event(), name(name), device(device) {}
+        const char* name;
+        YAPI_DEVICE device;
+        inline virtual void dispatch(Handle<Object> context) {
+            int argc = 2;
+            Handle<Value> argv[2] = {String::NewSymbol(name), Integer::New(device)};
             dispatchToV8(context, argc, argv);
         }
     };
@@ -146,23 +162,7 @@ namespace node_yoctopuce {
             : DeviceEvent("deviceRemoval", device) {}
     };
 
-    struct FunctionUpdateEvent : CharDataEvent {
-        explicit inline FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data) // NOLINT
-            : CharDataEvent(data), fundescr(fundescr) {}
-        YAPI_FUNCTION fundescr;
-        inline virtual void dispatch(Handle<Object> context) {
-            int argc = 3;
-            Handle<Value> argv[3] =
-            {String::New("functionUpdate"), Integer::New(fundescr), String::New(data.c_str())};
-            dispatchToV8(context, argc, argv);
-        }
-    };
 
-    struct EventBaton {
-        uv_async_t async;
-        Event* event;
-        ~EventBaton() {}
-    };
 
 }  // namespace node_yoctopuce
 

@@ -44,26 +44,26 @@ using std::swap;
 
 namespace node_yoctopuce {
 
-    Persistent<Object> Yoctopuce::g_targetHandle;
-    queue<Event*> Yoctopuce::g_event_queue;
     unsigned long Yoctopuce::g_main_thread_id;
+    Persistent<Object> Yoctopuce::g_target_handle;
+    queue<Event*> Yoctopuce::g_event_queue;
     uv_mutex_t Yoctopuce::g_event_queue_mutex;
     uv_async_t Yoctopuce::g_event_async;
 
     void Yoctopuce::Initialize(Handle<Object> target) {
         HandleScope scope;
 
-        g_targetHandle = Persistent<Object>::New(target);
+        g_target_handle = Persistent<Object>::New(target);
 
         // Expose API methods
-        NODE_SET_METHOD(g_targetHandle, "updateDeviceList", UpdateDeviceList);
-        NODE_SET_METHOD(g_targetHandle, "handleEvents", HandleEvents);
-        NODE_SET_METHOD(g_targetHandle, "getDeviceInfo", GetDeviceInfo);
+        NODE_SET_METHOD(g_target_handle, "updateDeviceList", UpdateDeviceList);
+        NODE_SET_METHOD(g_target_handle, "handleEvents", HandleEvents);
+        NODE_SET_METHOD(g_target_handle, "getDeviceInfo", GetDeviceInfo);
 
         // Set up the event queue
         g_main_thread_id = uv_thread_self();
         uv_mutex_init(&g_event_queue_mutex);
-        uv_async_init(uv_default_loop(), &g_event_async, onEventCallback);
+        uv_async_init(uv_default_loop(), &g_event_async, onEvent);
         uv_unref(reinterpret_cast<uv_handle_t*>(&g_event_async));
 
         // Set up to handle device events
@@ -87,7 +87,7 @@ namespace node_yoctopuce {
         // Clean up
         uv_close(reinterpret_cast<uv_handle_t*>(&g_event_async), NULL);
         uv_mutex_destroy(&g_event_queue_mutex);
-        g_targetHandle.Clear();
+        g_target_handle.Clear();
     }
 
     Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args) {
@@ -149,9 +149,9 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::fwdEvent(Event* event) {
-        // Dispatch the event if we are already on the main thread
         if(g_main_thread_id == uv_thread_self()) {
-            dispatchEvent(event);
+            // Dispatch the event if we are already on the main thread
+            event->dispatch(g_target_handle);
         } else {
             // Otherwise push it to the queue
             uv_mutex_lock(&g_event_queue_mutex);
@@ -167,35 +167,24 @@ namespace node_yoctopuce {
             // Wait for the event to be dispatched to v8;
             event->waitOnDispatch();
 
-            // Free the event loop and clean up;
+            // Free the event loop;
             uv_unref(reinterpret_cast<uv_handle_t*>(&g_event_async));
         }
         delete event;
     }
 
-    void Yoctopuce::onEventCallback(uv_async_t *async, int status) {
-        dispatchEvents();
-    }
-
-    void Yoctopuce::dispatchEvents() {
-        // Dequeue the events.
+    void Yoctopuce::onEvent(uv_async_t *async, int status) {
+         // Snapshot queued the events.
         queue<Event*> events;
         uv_mutex_lock(&g_event_queue_mutex);
         swap(g_event_queue, events);
         uv_mutex_unlock(&g_event_queue_mutex);
 
-        // Dispatch the events and signal any waiting threads to continue
+        // Dispatch the events
         while(!events.empty()) {
-            dispatchEvent(events.front());
+            events.front()->dispatch(g_target_handle);           
             events.pop();
         }
-    }
-
-    void Yoctopuce::dispatchEvent(Event* event) {
-        if(!g_targetHandle.IsEmpty()) {
-            event->dispatch(g_targetHandle);
-        }
-        event->signalDispatch();
     }
 
 }  // namespace node_yoctopuce

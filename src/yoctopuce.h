@@ -63,13 +63,11 @@ namespace node_yoctopuce {
         static void fwdDeviceChangeEvent(YAPI_DEVICE device);
         static void fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *value);
         static void fwdEvent(Event* event);
-        static void onEventCallback(uv_async_t *async, int status);
-        static void dispatchEvents();
-        static void dispatchEvent(Event* event);
+        static void onEvent(uv_async_t *async, int status);
 
     private:
         static unsigned long g_main_thread_id;
-        static Persistent<Object> g_targetHandle;
+        static Persistent<Object> g_target_handle;
         static uv_mutex_t g_event_queue_mutex;
         static queue<Event*> g_event_queue;
         static uv_async_t g_event_async;
