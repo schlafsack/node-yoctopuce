@@ -44,7 +44,7 @@ using std::swap;
 
 namespace node_yoctopuce {
 
-    unsigned long Yoctopuce::g_main_thread_id;
+    uint64_t Yoctopuce::g_main_thread_id;
     Persistent<Object> Yoctopuce::g_target_handle;
     queue<Event*> Yoctopuce::g_event_queue;
     uv_mutex_t Yoctopuce::g_event_queue_mutex;
@@ -149,7 +149,7 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::fwdEvent(Event* event) {
-        if(g_main_thread_id == uv_thread_self()) {
+        if (g_main_thread_id == uv_thread_self()) {
             // Dispatch the event if we are already on the main thread
             event->dispatch(g_target_handle);
         } else {
@@ -174,15 +174,15 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::onEvent(uv_async_t *async, int status) {
-         // Snapshot queued the events.
+         // Snapshot the queued events.
         queue<Event*> events;
         uv_mutex_lock(&g_event_queue_mutex);
         swap(g_event_queue, events);
         uv_mutex_unlock(&g_event_queue_mutex);
 
         // Dispatch the events
-        while(!events.empty()) {
-            events.front()->dispatch(g_target_handle);           
+        while (!events.empty()) {
+            events.front()->dispatch(g_target_handle);
             events.pop();
         }
     }

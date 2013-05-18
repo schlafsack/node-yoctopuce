@@ -54,21 +54,19 @@ namespace node_yoctopuce {
 
         explicit inline Event() {
             uv_mutex_init(&dispatch_mutex);
-            uv_cond_init(&dispatch_cond); 
+            uv_cond_init(&dispatch_cond);
         }
 
         virtual void dispatch(Handle<Object> context)=0;
 
         void dispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]) {
             HandleScope scope;
-            if(!context.IsEmpty())
-            {
+            if (!context.IsEmpty()) {
                 Local<Value> dispatchValue = context->Get(String::NewSymbol("emit"));
 
                 // If the emit function has been bound call it; otherwise
                 // drop the events.
-                if(!dispatchValue.IsEmpty() && dispatchValue->IsFunction())
-                {
+                if (!dispatchValue.IsEmpty() && dispatchValue->IsFunction()) {
                     Local<Function> dispatchFunction = Local<Function>::Cast(dispatchValue);
                     TryCatch try_catch;
                     dispatchFunction->Call(context, argc, argv);
@@ -82,13 +80,13 @@ namespace node_yoctopuce {
 
         void signalDispatch() {
             uv_mutex_lock(&dispatch_mutex);
-            uv_cond_signal(&dispatch_cond); 
+            uv_cond_signal(&dispatch_cond);
             uv_mutex_unlock(&dispatch_mutex);
         }
 
         void waitOnDispatch() {
             uv_mutex_lock(&dispatch_mutex);
-            uv_cond_wait(&dispatch_cond, &dispatch_mutex); 
+            uv_cond_wait(&dispatch_cond, &dispatch_mutex);
             uv_mutex_unlock(&dispatch_mutex);
         }
 

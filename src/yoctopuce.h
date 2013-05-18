@@ -66,7 +66,7 @@ namespace node_yoctopuce {
         static void onEvent(uv_async_t *async, int status);
 
     private:
-        static unsigned long g_main_thread_id;
+        static uint64_t g_main_thread_id;
         static Persistent<Object> g_target_handle;
         static uv_mutex_t g_event_queue_mutex;
         static queue<Event*> g_event_queue;
