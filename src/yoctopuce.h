@@ -57,6 +57,7 @@ namespace node_yoctopuce {
         static Handle<Value> GetAllDevices(const Arguments& args);
         static Handle<Value> GetDeviceInfo(const Arguments& args);
         static Handle<Value> GetDevicePath(const Arguments& args);
+        static Handle<Value> GetFunction(const Arguments& args);
 
         //  Events
         static void fwdLogEvent(const char* log, u32 loglen);

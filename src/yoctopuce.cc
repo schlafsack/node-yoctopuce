@@ -69,6 +69,7 @@ namespace node_yoctopuce {
         NODE_SET_METHOD(g_target_handle, "getAllDevices", GetAllDevices);
         NODE_SET_METHOD(g_target_handle, "getDeviceInfo", GetDeviceInfo);
         NODE_SET_METHOD(g_target_handle, "getDevicePath", GetDevicePath);
+        NODE_SET_METHOD(g_target_handle, "getFunction", GetFunction);
 
         // Set up the event queue
         g_main_thread_id = uv_thread_self();
@@ -201,6 +202,32 @@ namespace node_yoctopuce {
         result->Set(String::NewSymbol("serial"), String::New(infos.serial));
         result->Set(String::NewSymbol("vendorId"), Number::New(infos.vendorid));
 
+        return scope.Close(result);
+    }
+
+    Handle<Value> Yoctopuce::GetFunction(const Arguments& args) {
+        HandleScope scope;
+
+        if (args.Length() < 1 || !args[0]->IsString()) {
+            return ThrowException(Exception::TypeError(String::New("Argument 1 must be a string")));
+        }
+        String::Utf8Value class_arg(args[0]->ToString());
+
+        if (args.Length() != 2 || !args[1]->IsString()) {
+            return ThrowException(Exception::TypeError(String::New("Argument 2 must be a string")));
+        }
+        String::Utf8Value fnct_arg(args[1]->ToString());
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        const char* c_class_arg = *class_arg;
+        const char* c_fnct_arg = *fnct_arg;
+        YAPI_FUNCTION function = yapiGetFunction(c_class_arg, c_fnct_arg, errmsg);
+
+        if (YISERR(function)) {
+            THROW("GetDevice failed: ", errmsg)
+        }
+
+        Local<Number> result = Number::New(function);
         return scope.Close(result);
     }
 
