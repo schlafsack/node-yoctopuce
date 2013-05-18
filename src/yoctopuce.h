@@ -53,7 +53,10 @@ namespace node_yoctopuce {
         //  API Calls
         static Handle<Value> UpdateDeviceList(const Arguments& args);
         static Handle<Value> HandleEvents(const Arguments& args);
+        static Handle<Value> GetDevice(const Arguments& args);
+        static Handle<Value> GetAllDevices(const Arguments& args);
         static Handle<Value> GetDeviceInfo(const Arguments& args);
+        static Handle<Value> GetDevicePath(const Arguments& args);
 
         //  Events
         static void fwdLogEvent(const char* log, u32 loglen);

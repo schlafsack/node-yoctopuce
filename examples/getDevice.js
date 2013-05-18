@@ -22,39 +22,22 @@
  * IN THE SOFTWARE.
  */
 
-var yoctopuce = require('../');
 var util = require('util');
 
-util.log("yoctopuce initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+if (process.argv.length < 3) {
+  util.log("Use: node getDevice.js devicename");
+  process.exit();
+}
 
-yoctopuce.on("log", function (message) {
-  util.log(util.format("Log %s.", message));
-});
+var yoctopuce = require('../');
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
 
-yoctopuce.on("deviceLog", function (device) {
-  util.log(util.format("device log %d.", device));
-});
-
-yoctopuce.on("deviceArrival", function (device) {
-  util.log(util.format("device arrived %d.", device));
-});
-
-yoctopuce.on("deviceRemoval", function (device) {
-  util.log(util.format("device removed %d.", device));
-});
-
-yoctopuce.on("deviceChange", function (device) {
-  util.log(util.format("device changed %d.", device));
-});
-
-yoctopuce.on("functionUpdate", function (func, message) {
-  util.log(util.format("function: %d value: %s.", func, message));
-});
-
-util.print("use ctrl-c to quit.\n");
-
-setInterval(function () {
-  // Keep Alive.
-}, 10000);
-
-
+var deviceName = process.argv[2];
+try {
+  var device = yoctopuce.getDevice(deviceName);
+  util.log(util.format("Device %s found with id %d.", deviceName, device));
+}
+catch (ex) {
+  util.log(ex);
+  util.log(util.format("Error getting device %s.", deviceName));
+}

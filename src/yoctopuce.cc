@@ -36,6 +36,8 @@ using v8::HandleScope;
 using v8::Persistent;
 using v8::Exception;
 using v8::String;
+using v8::Number;
+using v8::Array;
 using v8::Undefined;
 using v8::ThrowException;
 
@@ -43,6 +45,11 @@ using std::queue;
 using std::swap;
 
 namespace node_yoctopuce {
+
+#define THROW(msg, err) \
+    Local<String> m1 = String::NewSymbol(msg); \
+    Local<String> m2 = String::Concat(m1, String::New(err)); \
+    return ThrowException(Exception::Error(m2));
 
     uint64_t Yoctopuce::g_main_thread_id;
     Persistent<Object> Yoctopuce::g_target_handle;
@@ -58,7 +65,10 @@ namespace node_yoctopuce {
         // Expose API methods
         NODE_SET_METHOD(g_target_handle, "updateDeviceList", UpdateDeviceList);
         NODE_SET_METHOD(g_target_handle, "handleEvents", HandleEvents);
+        NODE_SET_METHOD(g_target_handle, "getDevice", GetDevice);
+        NODE_SET_METHOD(g_target_handle, "getAllDevices", GetAllDevices);
         NODE_SET_METHOD(g_target_handle, "getDeviceInfo", GetDeviceInfo);
+        NODE_SET_METHOD(g_target_handle, "getDevicePath", GetDevicePath);
 
         // Set up the event queue
         g_main_thread_id = uv_thread_self();
@@ -94,9 +104,7 @@ namespace node_yoctopuce {
         HandleScope scope;
         char errmsg[YOCTO_ERRMSG_LEN];
         if (yapiUpdateDeviceList(false, errmsg) != YAPI_SUCCESS) {
-            Local<String> m1 = String::NewSymbol("UpdateDeviceList failed: ");
-            Local<String> m2 = String::Concat(m1, String::New(errmsg));
-            return ThrowException(Exception::Error(m2));
+            THROW("UpdateDeviceList failed: ", errmsg)
         }
         return scope.Close(Undefined());
     }
@@ -105,23 +113,130 @@ namespace node_yoctopuce {
         HandleScope scope;
         char errmsg[YOCTO_ERRMSG_LEN];
         if (yapiHandleEvents(errmsg) != YAPI_SUCCESS) {
-            Local<String> m1 = String::NewSymbol("HandleEvents failed: ");
-            Local<String> m2 = String::Concat(m1, String::New(errmsg));
-            return ThrowException(Exception::Error(m2));
+            THROW("HandleEvents failed: ", errmsg)
         }
         return scope.Close(Undefined());
     }
 
+    Handle<Value> Yoctopuce::GetDevice(const Arguments& args) {
+        HandleScope scope;
+
+        if (args.Length() != 1 || !args[0]->IsString()) {
+            return ThrowException(Exception::TypeError(String::New("Argument 1 must be a string")));
+        }
+        String::Utf8Value arg(args[0]->ToString());
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        const char* c_arg = *arg;
+        YAPI_DEVICE device = yapiGetDevice(c_arg, errmsg);
+
+        if (YISERR(device)) {
+            THROW("GetDevice failed: ", errmsg)
+        }
+
+        Local<Number> result = Number::New(device);
+        return scope.Close(result);
+    }
+
+    Handle<Value> Yoctopuce::GetAllDevices(const Arguments& args) {
+        HandleScope scope;
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        int elements = 32;
+        int init_size = elements * sizeof(YAPI_DEVICE);
+        YAPI_DEVICE *devices = new YAPI_DEVICE[elements];
+        int ret, required_size;
+
+        ret = yapiGetAllDevices(devices, elements, &required_size, errmsg);
+        if (YISERR(ret)) {
+            delete[] devices;
+            THROW("GetAllDevices failed: ", errmsg);
+        }
+        if (required_size > init_size) {
+            delete [] devices;
+            elements = required_size / sizeof(YAPI_DEVICE);
+            init_size = elements * sizeof(YAPI_DEVICE);
+            devices = new YAPI_DEVICE[elements];
+            ret = yapiGetAllDevices(devices, elements, &required_size, errmsg);
+            if (YISERR(ret)) {
+                delete[] devices;
+                THROW("GetAllDevices failed: ", errmsg);
+            }
+        }
+
+        Local<Array> result = Array::New();
+        for (int x = 0; x < ret; x++) {
+            result->Set(x, Number::New(devices[x]));
+        }
+        delete[] devices;
+        return scope.Close(result);
+    }
+
     Handle<Value> Yoctopuce::GetDeviceInfo(const Arguments& args) {
         HandleScope scope;
+
+        YAPI_DEVICE deviceId;
         yDeviceSt infos;
-        char errmsg[YOCTO_ERRMSG_LEN];
-        if (yapiGetDeviceInfo(239, &infos, errmsg) != YAPI_SUCCESS) {
-            Local<String> m1 = String::NewSymbol("GetDeviceInfo failed: ");
-            Local<String> m2 = String::Concat(m1, String::New(errmsg));
-            return ThrowException(Exception::Error(m2));
+
+        if (args.Length() == 1 && args[0]->IsInt32()) {
+            deviceId = args[0]->Int32Value();
+        } else {
+            return ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer")));
         }
-        return scope.Close(Undefined());
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        if (yapiGetDeviceInfo(deviceId, &infos, errmsg) != YAPI_SUCCESS) {
+            THROW("GetDeviceInfo failed: ", errmsg);
+        }
+
+        Local<Object> result = Object::New();
+        result->Set(String::NewSymbol("beacon"), Number::New(infos.beacon));
+        result->Set(String::NewSymbol("deviceId"), Number::New(infos.deviceid));
+        result->Set(String::NewSymbol("devRelease"), Number::New(infos.devrelease));
+        result->Set(String::NewSymbol("firmware"), String::New(infos.firmware));
+        result->Set(String::NewSymbol("logicalName"), String::New(infos.logicalname));
+        result->Set(String::NewSymbol("manufacturer"), String::New(infos.manufacturer));
+        result->Set(String::NewSymbol("nbInterfaces"), Number::New(infos.nbinbterfaces));
+        result->Set(String::NewSymbol("productName"), String::New(infos.productname));
+        result->Set(String::NewSymbol("serial"), String::New(infos.serial));
+        result->Set(String::NewSymbol("vendorId"), Number::New(infos.vendorid));
+
+        return scope.Close(result);
+    }
+
+    Handle<Value> Yoctopuce::GetDevicePath(const Arguments& args) {
+        HandleScope scope;
+
+        YAPI_DEVICE device_id;
+
+        if (args.Length() == 1 && args[0]->IsInt32()) {
+            device_id = args[0]->Int32Value();
+        } else {
+            return ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer")));
+        }
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        char root_device[YOCTO_SERIAL_LEN];
+        int ret, required_size;
+
+        ret = yapiGetDevicePath(device_id, root_device, NULL, 0, &required_size, errmsg);
+        if (YISERR(ret)) {
+            THROW("GetDevicePath failed: ", errmsg);
+        }
+
+        char *sub_path = new char[required_size];
+        ret = yapiGetDevicePath(device_id, root_device, sub_path, required_size, NULL, errmsg);
+        if (YISERR(ret)) {
+            delete sub_path;
+            THROW("GetDevicePath failed: ", errmsg);
+        }
+
+        Local<Object> result = Object::New();
+        result->Set(String::NewSymbol("rootDevice"), String::New(root_device));
+        result->Set(String::NewSymbol("subPath"), String::New(sub_path));
+
+        delete sub_path;
+        return scope.Close(result);
     }
 
     void Yoctopuce::fwdLogEvent(const char* log, u32 loglen) {
@@ -174,7 +289,7 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::onEvent(uv_async_t *async, int status) {
-         // Snapshot the queued events.
+        // Snapshot the queued events.
         queue<Event*> events;
         uv_mutex_lock(&g_event_queue_mutex);
         swap(g_event_queue, events);
