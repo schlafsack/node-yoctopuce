@@ -25,19 +25,26 @@
 var util = require('util');
 
 if (process.argv.length < 3) {
-  util.log("Use: node getDevicePath.js deviceId");
+  util.log("Use: node getFunctionsByClass.js functionclass <functionId>");
   process.exit();
 }
 
 var yoctopuce = require('../');
 util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
 
-var deviceId = parseInt(process.argv[2]);
-try {
-  var devicePath = yoctopuce.getDevicePath(deviceId);
-  util.log("Device Path:\n" + util.inspect(devicePath, { showHidden:true, depth:null }))
+var functionClass = process.argv[2];
+var functionId = parseInt(process.argv[3]);
+
+var functions;
+if (functionId) {
+  functions = yoctopuce.getFunctionsByClass(functionClass, functionId);
+} else {
+  functions = yoctopuce.getFunctionsByClass(functionClass);
 }
-catch (ex) {
-  util.log(ex);
-  util.log(util.format("Error getting path for device %d.", deviceId));
+
+if (Array.isArray(functions)) {
+  util.log(util.format("%d functions found:", functions.length));
+  for (var k in functions) {
+    util.log(util.format("Function found with id %d.", functions[k]));
+  }
 }

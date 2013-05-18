@@ -70,6 +70,8 @@ namespace node_yoctopuce {
         NODE_SET_METHOD(g_target_handle, "getDeviceInfo", GetDeviceInfo);
         NODE_SET_METHOD(g_target_handle, "getDevicePath", GetDevicePath);
         NODE_SET_METHOD(g_target_handle, "getFunction", GetFunction);
+        NODE_SET_METHOD(g_target_handle, "getFunctionsByClass", GetFunctionsByClass);
+        NODE_SET_METHOD(g_target_handle, "getFunctionsByDevice", GetFunctionsByDevice);
 
         // Set up the event queue
         g_main_thread_id = uv_thread_self();
@@ -205,32 +207,6 @@ namespace node_yoctopuce {
         return scope.Close(result);
     }
 
-    Handle<Value> Yoctopuce::GetFunction(const Arguments& args) {
-        HandleScope scope;
-
-        if (args.Length() < 1 || !args[0]->IsString()) {
-            return ThrowException(Exception::TypeError(String::New("Argument 1 must be a string")));
-        }
-        String::Utf8Value class_arg(args[0]->ToString());
-
-        if (args.Length() != 2 || !args[1]->IsString()) {
-            return ThrowException(Exception::TypeError(String::New("Argument 2 must be a string")));
-        }
-        String::Utf8Value fnct_arg(args[1]->ToString());
-
-        char errmsg[YOCTO_ERRMSG_LEN];
-        const char* c_class_arg = *class_arg;
-        const char* c_fnct_arg = *fnct_arg;
-        YAPI_FUNCTION function = yapiGetFunction(c_class_arg, c_fnct_arg, errmsg);
-
-        if (YISERR(function)) {
-            THROW("GetDevice failed: ", errmsg)
-        }
-
-        Local<Number> result = Number::New(function);
-        return scope.Close(result);
-    }
-
     Handle<Value> Yoctopuce::GetDevicePath(const Arguments& args) {
         HandleScope scope;
 
@@ -263,6 +239,140 @@ namespace node_yoctopuce {
         result->Set(String::NewSymbol("subPath"), String::New(sub_path));
 
         delete sub_path;
+        return scope.Close(result);
+    }
+
+    Handle<Value> Yoctopuce::GetFunction(const Arguments& args) {
+        HandleScope scope;
+
+        if (args.Length() < 1 || !args[0]->IsString()) {
+            return ThrowException(Exception::TypeError(String::New("Argument 1 must be a string")));
+        }
+        String::Utf8Value class_arg(args[0]->ToString());
+
+        if (args.Length() != 2 || !args[1]->IsString()) {
+            return ThrowException(Exception::TypeError(String::New("Argument 2 must be a string")));
+        }
+        String::Utf8Value fnct_arg(args[1]->ToString());
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        const char* c_class_arg = *class_arg;
+        const char* c_fnct_arg = *fnct_arg;
+        YAPI_FUNCTION function = yapiGetFunction(c_class_arg, c_fnct_arg, errmsg);
+
+        if (YISERR(function)) {
+            THROW("GetDevice failed: ", errmsg)
+        }
+
+        Local<Number> result = Number::New(function);
+        return scope.Close(result);
+    }
+
+    Handle<Value> Yoctopuce::GetFunctionsByClass(const Arguments& args) {
+        HandleScope scope;
+
+        YAPI_FUNCTION prev_function = 0;
+
+        if (args.Length() < 1 || !args[0]->IsString()) {
+            return ThrowException(Exception::TypeError(String::New("Argument 1 must be a string")));
+        }
+        String::Utf8Value class_arg(args[0]->ToString());
+
+        if (args.Length() == 2 && args[1]->IsInt32()) {
+            prev_function = args[1]->Int32Value();
+        } else if (args.Length() == 2) {
+            return ThrowException(Exception::TypeError(String::New("Argument 2 must be a number")));
+        }
+
+        const char* c_class_arg = *class_arg;
+
+        // TODO(tjg) the yoctopuce wrapper for this method accepts a maxsize
+        // arg for paging through the data, however it's not used.
+        // Raise this as we bug with them.  Also YAPI_DEVICE is used
+        // to calculate init_size rather than YAPI_FUNCTION.
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        int elements = 32;
+        int init_size = elements * sizeof(YAPI_FUNCTION);
+        YAPI_FUNCTION *functions = new YAPI_FUNCTION[elements];
+        int ret, required_size;
+
+        ret = yapiGetFunctionsByClass(c_class_arg, prev_function, functions, init_size, &required_size, errmsg);
+        if (YISERR(ret)) {
+            delete[] functions;
+            THROW("GetFunctionsByClass failed: ", errmsg);
+        }
+        if (required_size > init_size) {
+            delete [] functions;
+            elements = required_size / sizeof(YAPI_FUNCTION);
+            init_size = elements * sizeof(YAPI_FUNCTION);
+            functions = new YAPI_FUNCTION[elements];
+            ret = yapiGetFunctionsByClass(c_class_arg, prev_function, functions, init_size, NULL, errmsg);
+            if (YISERR(ret)) {
+                delete[] functions;
+                THROW("GetFunctionsByClass failed: ", errmsg);
+            }
+        }
+
+        Local<Array> result = Array::New();
+        for (int x = 0; x < ret; x++) {
+            result->Set(x, Number::New(functions[x]));
+        }
+        delete[] functions;
+        return scope.Close(result);
+    }
+
+    Handle<Value> Yoctopuce::GetFunctionsByDevice(const Arguments& args) {
+        HandleScope scope;
+
+        YAPI_DEVICE device_id;
+        YAPI_FUNCTION prev_function = 0;
+
+        if (args.Length() > 0  && args[0]->IsInt32()) {
+            device_id = args[0]->Int32Value();
+        } else {
+            return ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer")));
+        }
+
+        if (args.Length() == 2 && args[1]->IsInt32()) {
+            prev_function = args[1]->Int32Value();
+        } else if (args.Length() == 2) {
+            return ThrowException(Exception::TypeError(String::New("Argument 2 must be an integer")));
+        }
+
+        // TODO(tjg) the yoctopuce wrapper for this method accepts a maxsize
+        // arg for paging through the data, however it's not used.
+        // Raise this as we bug with them.  Also YAPI_DEVICE is used
+        // to calculate init_size rather than YAPI_FUNCTION.
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        int elements = 32;
+        int init_size = elements * sizeof(YAPI_FUNCTION);
+        YAPI_FUNCTION *functions = new YAPI_FUNCTION[elements];
+        int ret, required_size;
+
+        ret = yapiGetFunctionsByDevice(device_id, prev_function, functions, init_size, &required_size, errmsg);
+        if (YISERR(ret)) {
+            delete[] functions;
+            THROW("GetFunctionsByDevice failed: ", errmsg);
+        }
+        if (required_size > init_size) {
+            delete [] functions;
+            elements = required_size / sizeof(YAPI_FUNCTION);
+            init_size = elements * sizeof(YAPI_FUNCTION);
+            functions = new YAPI_FUNCTION[elements];
+            ret = yapiGetFunctionsByDevice(device_id, prev_function, functions, init_size, NULL, errmsg);
+            if (YISERR(ret)) {
+                delete[] functions;
+                THROW("GetFunctionsByDevice failed: ", errmsg);
+            }
+        }
+
+        Local<Array> result = Array::New();
+        for (int x = 0; x < ret; x++) {
+            result->Set(x, Number::New(functions[x]));
+        }
+        delete[] functions;
         return scope.Close(result);
     }
 
