@@ -25,7 +25,7 @@
 var util = require('util');
 
 if (process.argv.length < 3) {
-  util.log("Use: node getDevice.js devicename");
+  util.log("Use: node getDevicePath.js devicename");
   process.exit();
 }
 
@@ -41,5 +41,5 @@ try {
 }
 catch (ex) {
   util.log(ex);
-  util.log(util.format("Error getting device %s.", deviceName));
+  util.log(util.format("Error getting device path %s.", deviceName));
 }
