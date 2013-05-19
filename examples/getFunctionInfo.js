@@ -25,19 +25,19 @@
 var util = require('util');
 
 if (process.argv.length < 3) {
-  util.log("Use: node getDeviceInfo.js deviceId");
+  util.log("Use: node getFunctionInfo.js functionId");
   process.exit();
 }
 
 var yoctopuce = require('../');
 util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
 
-var deviceId = parseInt(process.argv[2]);
+var functionId = parseInt(process.argv[2]);
 try {
-  var deviceInfo = yoctopuce.getDeviceInfo(deviceId);
-  util.log("Device Info:\n" + util.inspect(deviceInfo, { showHidden:true, depth:null }))
+  var functionInfo = yoctopuce.getFunctionInfo(functionId);
+  util.log("Function Info:\n" + util.inspect(functionInfo, { showHidden:true, depth:null }))
 }
 catch (ex) {
   util.log(ex);
-  util.log(util.format("Error getting info for device %d.", deviceId));
+  util.log(util.format("Error getting info for function %d.", functionId));
 }

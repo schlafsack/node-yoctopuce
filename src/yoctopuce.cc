@@ -72,6 +72,7 @@ namespace node_yoctopuce {
         NODE_SET_METHOD(g_target_handle, "getFunction", GetFunction);
         NODE_SET_METHOD(g_target_handle, "getFunctionsByClass", GetFunctionsByClass);
         NODE_SET_METHOD(g_target_handle, "getFunctionsByDevice", GetFunctionsByDevice);
+        NODE_SET_METHOD(g_target_handle, "getFunctionInfo", GetFunctionInfo);
 
         // Set up the event queue
         g_main_thread_id = uv_thread_self();
@@ -188,7 +189,7 @@ namespace node_yoctopuce {
         }
 
         char errmsg[YOCTO_ERRMSG_LEN];
-        if (yapiGetDeviceInfo(deviceId, &infos, errmsg) != YAPI_SUCCESS) {
+        if (YISERR(yapiGetDeviceInfo(deviceId, &infos, errmsg))) {
             THROW("GetDeviceInfo failed: ", errmsg);
         }
 
@@ -258,6 +259,7 @@ namespace node_yoctopuce {
         char errmsg[YOCTO_ERRMSG_LEN];
         const char* c_class_arg = *class_arg;
         const char* c_fnct_arg = *fnct_arg;
+
         YAPI_FUNCTION function = yapiGetFunction(c_class_arg, c_fnct_arg, errmsg);
 
         if (YISERR(function)) {
@@ -373,6 +375,39 @@ namespace node_yoctopuce {
             result->Set(x, Number::New(functions[x]));
         }
         delete[] functions;
+        return scope.Close(result);
+    }
+
+    Handle<Value> Yoctopuce::GetFunctionInfo(const Arguments& args) {
+        HandleScope scope;
+
+        YAPI_FUNCTION arg;
+
+        if (args.Length() == 1 && args[0]->IsInt32()) {
+            arg = args[0]->Int32Value();
+        } else {
+            return ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer")));
+        }
+
+        YAPI_DEVICE device;
+        char errmsg[YOCTO_ERRMSG_LEN];
+        char function_serial[YOCTO_SERIAL_LEN];
+        char function_id[YOCTO_FUNCTION_LEN];
+        char function_logical_name[YOCTO_LOGICAL_LEN];
+        char function_value[YOCTO_PUBVAL_LEN];
+
+        if (YISERR(yapiGetFunctionInfo(arg, &device, function_serial, function_id,
+            function_logical_name, function_value, errmsg))) {
+                THROW("GetDeviceInfo failed: ", errmsg);
+        }
+
+        Local<Object> result = Object::New();
+        result->Set(String::NewSymbol("device"), Number::New(device));
+        result->Set(String::NewSymbol("serial"), String::New(function_serial));
+        result->Set(String::NewSymbol("functionId"), String::New(function_id));
+        result->Set(String::NewSymbol("logicalName"), String::New(function_logical_name));
+        result->Set(String::NewSymbol("value"), String::New(function_value));
+
         return scope.Close(result);
     }
 
