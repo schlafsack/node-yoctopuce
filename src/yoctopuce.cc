@@ -38,6 +38,7 @@ using v8::Exception;
 using v8::String;
 using v8::Number;
 using v8::Array;
+using v8::Boolean;
 using v8::Undefined;
 using v8::ThrowException;
 
@@ -64,6 +65,7 @@ namespace node_yoctopuce {
         // Expose API methods
         NODE_SET_METHOD(g_target_handle, "updateDeviceList", UpdateDeviceList);
         NODE_SET_METHOD(g_target_handle, "handleEvents", HandleEvents);
+        NODE_SET_METHOD(g_target_handle, "checkLogicalName", CheckLogicalName);
         NODE_SET_METHOD(g_target_handle, "getDevice", GetDevice);
         NODE_SET_METHOD(g_target_handle, "getAllDevices", GetAllDevices);
         NODE_SET_METHOD(g_target_handle, "getDeviceInfo", GetDeviceInfo);
@@ -132,6 +134,20 @@ namespace node_yoctopuce {
             return scope.Close(ex);
         }
         return scope.Close(Undefined());
+    }
+
+    Handle<Value> Yoctopuce::CheckLogicalName(const Arguments& args) {
+        HandleScope scope;
+
+        if (args.Length() != 1 || !args[0]->IsString()) {
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
+        }
+        String::Utf8Value arg(args[0]->ToString());
+
+        const char* c_arg = *arg;
+        bool ret = !!yapiCheckLogicalName(c_arg);
+
+        return scope.Close(Boolean::New(ret));
     }
 
     Handle<Value> Yoctopuce::GetDevice(const Arguments& args) {
