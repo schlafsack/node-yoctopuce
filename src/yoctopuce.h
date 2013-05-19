@@ -63,6 +63,7 @@ namespace node_yoctopuce {
         static Handle<Value> GetFunctionsByClass(const Arguments& args);
         static Handle<Value> GetFunctionsByDevice(const Arguments& args);
         static Handle<Value> GetFunctionInfo(const Arguments& args);
+        static Handle<Value> HttpRequest(const Arguments& args);
 
         //  Events
         static void fwdLogEvent(const char* log, u32 loglen);

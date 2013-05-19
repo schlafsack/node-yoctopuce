@@ -75,6 +75,7 @@ namespace node_yoctopuce {
         NODE_SET_METHOD(g_target_handle, "getFunctionsByClass", GetFunctionsByClass);
         NODE_SET_METHOD(g_target_handle, "getFunctionsByDevice", GetFunctionsByDevice);
         NODE_SET_METHOD(g_target_handle, "getFunctionInfo", GetFunctionInfo);
+        NODE_SET_METHOD(g_target_handle, "httpRequest", HttpRequest);
 
         // Set up the event queue
         uv_mutex_init(&g_event_queue_mutex);
@@ -464,6 +465,44 @@ namespace node_yoctopuce {
         result->Set(String::NewSymbol("value"), String::New(function_value));
 
         return scope.Close(result);
+    }
+
+    Handle<Value> Yoctopuce::HttpRequest(const Arguments& args) {
+        HandleScope scope;
+
+        if (args.Length() < 1 || !args[0]->IsString()) {
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
+        }
+        String::Utf8Value device_arg(args[0]->ToString());
+
+        if (args.Length() < 2 || !args[1]->IsString()) {
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 2 must be a string"))));
+        }
+        String::Utf8Value request_arg(args[1]->ToString());
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        const char *c_device = *device_arg;
+        const char *c_request = *request_arg;
+        int request_size = request_arg.length();
+        char *c_reply;
+        int reply_size;
+        YIOHDL request_handle;
+        YRETCODE ret;
+
+        if (YISERR(ret = yapiHTTPRequestSyncStartEx(&request_handle, c_device,
+            c_request, request_size, &c_reply, &reply_size, errmsg))) {
+                THROW("HttpRequest failed: ", errmsg, ex);
+                return scope.Close(ex);
+        }
+
+        Local<String> reply = String::New(c_reply, reply_size);
+
+        if (YISERR(ret = yapiHTTPRequestSyncDone(&request_handle, errmsg))) {
+            THROW("HttpRequest failed: ", errmsg, ex);
+            return scope.Close(ex);
+        }
+
+        return scope.Close(reply);
     }
 
     void Yoctopuce::fwdLogEvent(const char* log, u32 loglen) {
