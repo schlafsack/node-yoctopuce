@@ -66,6 +66,7 @@ namespace node_yoctopuce {
         NODE_SET_METHOD(g_target_handle, "updateDeviceList", UpdateDeviceList);
         NODE_SET_METHOD(g_target_handle, "handleEvents", HandleEvents);
         NODE_SET_METHOD(g_target_handle, "checkLogicalName", CheckLogicalName);
+        NODE_SET_METHOD(g_target_handle, "getApiVersion", GetApiVersion);
         NODE_SET_METHOD(g_target_handle, "getDevice", GetDevice);
         NODE_SET_METHOD(g_target_handle, "getAllDevices", GetAllDevices);
         NODE_SET_METHOD(g_target_handle, "getDeviceInfo", GetDeviceInfo);
@@ -148,6 +149,20 @@ namespace node_yoctopuce {
         bool ret = !!yapiCheckLogicalName(c_arg);
 
         return scope.Close(Boolean::New(ret));
+    }
+
+    Handle<Value> Yoctopuce::GetApiVersion(const Arguments& args) {
+        HandleScope scope;
+
+        const char *version, *date;
+        u16 ret = yapiGetAPIVersion(&version, &date);
+
+        Local<Object> result = Object::New();
+        result->Set(String::NewSymbol("apiBcdVersion"), Number::New(ret));
+        result->Set(String::NewSymbol("apiVersion"), String::New(version));
+        result->Set(String::NewSymbol("apiDate"), String::New(date));
+
+        return scope.Close(result);
     }
 
     Handle<Value> Yoctopuce::GetDevice(const Arguments& args) {
