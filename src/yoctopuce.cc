@@ -46,10 +46,10 @@ using std::swap;
 
 namespace node_yoctopuce {
 
-#define THROW(msg, err) \
+#define THROW(msg, err, ex) \
     Local<String> m1 = String::NewSymbol(msg); \
     Local<String> m2 = String::Concat(m1, String::New(err)); \
-    return ThrowException(Exception::Error(m2));
+    Handle<Value> ex = ThrowException(Exception::Error(m2));
 
     Persistent<Object> Yoctopuce::g_target_handle;
     queue<Event*> Yoctopuce::g_event_queue;
@@ -78,6 +78,15 @@ namespace node_yoctopuce {
         uv_async_init(uv_default_loop(), &g_event_async, onEvent);
         uv_unref(reinterpret_cast<uv_handle_t*>(&g_event_async));
 
+        // Initialise YAPI.
+        char errmsg[YOCTO_ERRMSG_LEN];
+        if (yapiInitAPI(Y_DETECT_USB, errmsg) != YAPI_SUCCESS
+            || yapiUpdateDeviceList(true, errmsg) != YAPI_SUCCESS) {
+                THROW("Unable to initialize yapi. ", errmsg, ex);
+                scope.Close(ex);
+                return;
+        }
+
         // Set up to handle device events
         yapiRegisterLogFunction(fwdLogEvent);
         yapiRegisterDeviceLogCallback(fwdDeviceLogEvent);
@@ -87,7 +96,7 @@ namespace node_yoctopuce {
         yapiRegisterFunctionUpdateCallback(fwdFunctionUpdateEvent);
     }
 
-    void Yoctopuce::Uninitialize() {
+    void Yoctopuce::Close() {
         // Stop receiving events
         yapiRegisterLogFunction(NULL);
         yapiRegisterDeviceLogCallback(NULL);
@@ -100,13 +109,17 @@ namespace node_yoctopuce {
         uv_close(reinterpret_cast<uv_handle_t*>(&g_event_async), NULL);
         uv_mutex_destroy(&g_event_queue_mutex);
         g_target_handle.Clear();
+
+        // Free the API.
+        yapiFreeAPI();
     }
 
     Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args) {
         HandleScope scope;
         char errmsg[YOCTO_ERRMSG_LEN];
         if (yapiUpdateDeviceList(false, errmsg) != YAPI_SUCCESS) {
-            THROW("UpdateDeviceList failed: ", errmsg)
+            THROW("UpdateDeviceList failed: ", errmsg, ex);
+            return scope.Close(ex);
         }
         return scope.Close(Undefined());
     }
@@ -115,7 +128,8 @@ namespace node_yoctopuce {
         HandleScope scope;
         char errmsg[YOCTO_ERRMSG_LEN];
         if (yapiHandleEvents(errmsg) != YAPI_SUCCESS) {
-            THROW("HandleEvents failed: ", errmsg)
+            THROW("HandleEvents failed: ", errmsg, ex);
+            return scope.Close(ex);
         }
         return scope.Close(Undefined());
     }
@@ -124,7 +138,7 @@ namespace node_yoctopuce {
         HandleScope scope;
 
         if (args.Length() != 1 || !args[0]->IsString()) {
-            return ThrowException(Exception::TypeError(String::New("Argument 1 must be a string")));
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
         }
         String::Utf8Value arg(args[0]->ToString());
 
@@ -133,7 +147,8 @@ namespace node_yoctopuce {
         YAPI_DEVICE device = yapiGetDevice(c_arg, errmsg);
 
         if (YISERR(device)) {
-            THROW("GetDevice failed: ", errmsg)
+            THROW("GetDevice failed: ", errmsg, ex);
+            return scope.Close(ex);
         }
 
         Local<Number> result = Number::New(device);
@@ -152,7 +167,8 @@ namespace node_yoctopuce {
         ret = yapiGetAllDevices(devices, elements, &required_size, errmsg);
         if (YISERR(ret)) {
             delete[] devices;
-            THROW("GetAllDevices failed: ", errmsg);
+            THROW("GetAllDevices failed: ", errmsg, ex);
+            return scope.Close(ex);
         }
         if (required_size > init_size) {
             delete [] devices;
@@ -162,7 +178,8 @@ namespace node_yoctopuce {
             ret = yapiGetAllDevices(devices, elements, &required_size, errmsg);
             if (YISERR(ret)) {
                 delete[] devices;
-                THROW("GetAllDevices failed: ", errmsg);
+                THROW("GetAllDevices failed: ", errmsg, ex);
+                return scope.Close(ex);
             }
         }
 
@@ -183,12 +200,13 @@ namespace node_yoctopuce {
         if (args.Length() == 1 && args[0]->IsInt32()) {
             deviceId = args[0]->Int32Value();
         } else {
-            return ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer")));
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer"))));
         }
 
         char errmsg[YOCTO_ERRMSG_LEN];
         if (YISERR(yapiGetDeviceInfo(deviceId, &infos, errmsg))) {
-            THROW("GetDeviceInfo failed: ", errmsg);
+            THROW("GetDeviceInfo failed: ", errmsg, ex);
+            return scope.Close(ex);
         }
 
         Local<Object> result = Object::New();
@@ -214,7 +232,7 @@ namespace node_yoctopuce {
         if (args.Length() == 1 && args[0]->IsInt32()) {
             device_id = args[0]->Int32Value();
         } else {
-            return ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer")));
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer"))));
         }
 
         char errmsg[YOCTO_ERRMSG_LEN];
@@ -223,14 +241,16 @@ namespace node_yoctopuce {
 
         ret = yapiGetDevicePath(device_id, root_device, NULL, 0, &required_size, errmsg);
         if (YISERR(ret)) {
-            THROW("GetDevicePath failed: ", errmsg);
+            THROW("GetDevicePath failed: ", errmsg, ex);
+            return scope.Close(ex);
         }
 
         char *sub_path = new char[required_size];
         ret = yapiGetDevicePath(device_id, root_device, sub_path, required_size, NULL, errmsg);
         if (YISERR(ret)) {
             delete sub_path;
-            THROW("GetDevicePath failed: ", errmsg);
+            THROW("GetDevicePath failed: ", errmsg, ex);
+            return scope.Close(ex);
         }
 
         Local<Object> result = Object::New();
@@ -245,12 +265,12 @@ namespace node_yoctopuce {
         HandleScope scope;
 
         if (args.Length() < 1 || !args[0]->IsString()) {
-            return ThrowException(Exception::TypeError(String::New("Argument 1 must be a string")));
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
         }
         String::Utf8Value class_arg(args[0]->ToString());
 
         if (args.Length() != 2 || !args[1]->IsString()) {
-            return ThrowException(Exception::TypeError(String::New("Argument 2 must be a string")));
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 2 must be a string"))));
         }
         String::Utf8Value fnct_arg(args[1]->ToString());
 
@@ -261,7 +281,8 @@ namespace node_yoctopuce {
         YAPI_FUNCTION function = yapiGetFunction(c_class_arg, c_fnct_arg, errmsg);
 
         if (YISERR(function)) {
-            THROW("GetDevice failed: ", errmsg)
+            THROW("GetDevice failed: ", errmsg, ex);
+            return scope.Close(ex);
         }
 
         Local<Number> result = Number::New(function);
@@ -274,14 +295,14 @@ namespace node_yoctopuce {
         YAPI_FUNCTION prev_function = 0;
 
         if (args.Length() < 1 || !args[0]->IsString()) {
-            return ThrowException(Exception::TypeError(String::New("Argument 1 must be a string")));
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
         }
         String::Utf8Value class_arg(args[0]->ToString());
 
         if (args.Length() == 2 && args[1]->IsInt32()) {
             prev_function = args[1]->Int32Value();
         } else if (args.Length() == 2) {
-            return ThrowException(Exception::TypeError(String::New("Argument 2 must be a number")));
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 2 must be a number"))));
         }
 
         const char* c_class_arg = *class_arg;
@@ -300,7 +321,8 @@ namespace node_yoctopuce {
         ret = yapiGetFunctionsByClass(c_class_arg, prev_function, functions, init_size, &required_size, errmsg);
         if (YISERR(ret)) {
             delete[] functions;
-            THROW("GetFunctionsByClass failed: ", errmsg);
+            THROW("GetFunctionsByClass failed: ", errmsg, ex);
+            return scope.Close(ex);
         }
         if (required_size > init_size) {
             delete [] functions;
@@ -310,7 +332,8 @@ namespace node_yoctopuce {
             ret = yapiGetFunctionsByClass(c_class_arg, prev_function, functions, init_size, NULL, errmsg);
             if (YISERR(ret)) {
                 delete[] functions;
-                THROW("GetFunctionsByClass failed: ", errmsg);
+                THROW("GetFunctionsByClass failed: ", errmsg, ex);
+                return scope.Close(ex);
             }
         }
 
@@ -331,13 +354,13 @@ namespace node_yoctopuce {
         if (args.Length() > 0  && args[0]->IsInt32()) {
             device_id = args[0]->Int32Value();
         } else {
-            return ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer")));
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer"))));
         }
 
         if (args.Length() == 2 && args[1]->IsInt32()) {
             prev_function = args[1]->Int32Value();
         } else if (args.Length() == 2) {
-            return ThrowException(Exception::TypeError(String::New("Argument 2 must be an integer")));
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 2 must be an integer"))));
         }
 
         // TODO(tjg) the yoctopuce wrapper for this method accepts a maxsize
@@ -354,7 +377,8 @@ namespace node_yoctopuce {
         ret = yapiGetFunctionsByDevice(device_id, prev_function, functions, init_size, &required_size, errmsg);
         if (YISERR(ret)) {
             delete[] functions;
-            THROW("GetFunctionsByDevice failed: ", errmsg);
+            THROW("GetFunctionsByDevice failed: ", errmsg, ex);
+            return scope.Close(ex);
         }
         if (required_size > init_size) {
             delete [] functions;
@@ -364,7 +388,8 @@ namespace node_yoctopuce {
             ret = yapiGetFunctionsByDevice(device_id, prev_function, functions, init_size, NULL, errmsg);
             if (YISERR(ret)) {
                 delete[] functions;
-                THROW("GetFunctionsByDevice failed: ", errmsg);
+                THROW("GetFunctionsByDevice failed: ", errmsg, ex);
+                return scope.Close(ex);
             }
         }
 
@@ -384,7 +409,7 @@ namespace node_yoctopuce {
         if (args.Length() == 1 && args[0]->IsInt32()) {
             arg = args[0]->Int32Value();
         } else {
-            return ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer")));
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be an integer"))));
         }
 
         YAPI_DEVICE device;
@@ -396,7 +421,8 @@ namespace node_yoctopuce {
 
         if (YISERR(yapiGetFunctionInfo(arg, &device, function_serial, function_id,
             function_logical_name, function_value, errmsg))) {
-                THROW("GetDeviceInfo failed: ", errmsg);
+                THROW("GetDeviceInfo failed: ", errmsg, ex);
+                return scope.Close(ex);
         }
 
         Local<Object> result = Object::New();
