@@ -49,14 +49,6 @@ using std::string;
 namespace node_yoctopuce {
 
     struct Event {
-        uv_mutex_t dispatch_mutex;
-        uv_cond_t dispatch_cond;
-
-        explicit inline Event() {
-            uv_mutex_init(&dispatch_mutex);
-            uv_cond_init(&dispatch_cond);
-        }
-
         virtual void dispatch(Handle<Object> context)=0;
 
         void dispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]) {
@@ -75,25 +67,9 @@ namespace node_yoctopuce {
                     }
                 }
             }
-            signalDispatch();
         }
 
-        void signalDispatch() {
-            uv_mutex_lock(&dispatch_mutex);
-            uv_cond_signal(&dispatch_cond);
-            uv_mutex_unlock(&dispatch_mutex);
-        }
-
-        void waitOnDispatch() {
-            uv_mutex_lock(&dispatch_mutex);
-            uv_cond_wait(&dispatch_cond, &dispatch_mutex);
-            uv_mutex_unlock(&dispatch_mutex);
-        }
-
-        virtual ~Event() {
-            uv_cond_destroy(&dispatch_cond);
-            uv_mutex_destroy(&dispatch_mutex);
-        }
+        virtual ~Event() {}
     };
 
     struct CharDataEvent : Event {

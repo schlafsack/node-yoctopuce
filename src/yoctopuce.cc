@@ -51,7 +51,6 @@ namespace node_yoctopuce {
     Local<String> m2 = String::Concat(m1, String::New(err)); \
     return ThrowException(Exception::Error(m2));
 
-    uint64_t Yoctopuce::g_main_thread_id;
     Persistent<Object> Yoctopuce::g_target_handle;
     queue<Event*> Yoctopuce::g_event_queue;
     uv_mutex_t Yoctopuce::g_event_queue_mutex;
@@ -75,7 +74,6 @@ namespace node_yoctopuce {
         NODE_SET_METHOD(g_target_handle, "getFunctionInfo", GetFunctionInfo);
 
         // Set up the event queue
-        g_main_thread_id = uv_thread_self();
         uv_mutex_init(&g_event_queue_mutex);
         uv_async_init(uv_default_loop(), &g_event_async, onEvent);
         uv_unref(reinterpret_cast<uv_handle_t*>(&g_event_async));
@@ -436,28 +434,16 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::fwdEvent(Event* event) {
-        if (g_main_thread_id == uv_thread_self()) {
-            // Dispatch the event if we are already on the main thread
-            event->dispatch(g_target_handle);
-        } else {
-            // Otherwise push it to the queue
-            uv_mutex_lock(&g_event_queue_mutex);
-            g_event_queue.push(event);
-            uv_mutex_unlock(&g_event_queue_mutex);
+        // Push the event to the queue
+        uv_mutex_lock(&g_event_queue_mutex);
+        g_event_queue.push(event);
+        uv_mutex_unlock(&g_event_queue_mutex);
 
-            // Hold the event loop open while this is executing
-            uv_ref(reinterpret_cast<uv_handle_t*>(&g_event_async));
+        // Hold the event loop open while this is executing
+        uv_ref(reinterpret_cast<uv_handle_t*>(&g_event_async));
 
-            // Send a message to our main thread to wake up the loop
-            uv_async_send(&g_event_async);
-
-            // Wait for the event to be dispatched to v8;
-            event->waitOnDispatch();
-
-            // Free the event loop;
-            uv_unref(reinterpret_cast<uv_handle_t*>(&g_event_async));
-        }
-        delete event;
+        // Send a message to our main thread to wake up the loop
+        uv_async_send(&g_event_async);
     }
 
     void Yoctopuce::onEvent(uv_async_t *async, int status) {
@@ -467,10 +453,13 @@ namespace node_yoctopuce {
         swap(g_event_queue, events);
         uv_mutex_unlock(&g_event_queue_mutex);
 
-        // Dispatch the events
+        // Dispatch & delete the events
         while (!events.empty()) {
-            events.front()->dispatch(g_target_handle);
+            Event *event = events.front();
             events.pop();
+            event->dispatch(g_target_handle);
+            delete event;
+            uv_unref(reinterpret_cast<uv_handle_t*>(&g_event_async));
         }
     }
 
