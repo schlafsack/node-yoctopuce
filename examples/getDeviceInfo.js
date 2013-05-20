@@ -23,21 +23,21 @@
  */
 
 var util = require('util');
+var yoctopuce, deviceId, deviceInfo;
 
 if (process.argv.length < 3) {
   util.log("Use: node getDeviceInfo.js deviceId");
   process.exit();
 }
 
-var yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+yoctopuce = require('../');
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
-var deviceId = parseInt(process.argv[2]);
+deviceId = parseInt(process.argv[2], 0);
 try {
-  var deviceInfo = yoctopuce.getDeviceInfo(deviceId);
-  util.log("Device Info:\n" + util.inspect(deviceInfo, { showHidden:true, depth:null }))
-}
-catch (ex) {
+  deviceInfo = yoctopuce.getDeviceInfo(deviceId);
+  util.log("Device Info:\n" + util.inspect(deviceInfo, { showHidden : true, depth : null }));
+} catch (ex) {
   util.log(ex);
   util.log(util.format("Error getting info for device %d.", deviceId));
 }

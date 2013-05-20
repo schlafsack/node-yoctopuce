@@ -23,26 +23,26 @@
  */
 
 var util = require('util');
+var yoctopuce, deviceName, response, json, data;
 
 if (process.argv.length < 3) {
   util.log("Use: node httpRequest.js devicename");
   process.exit();
 }
 
-var yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+yoctopuce = require('../');
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
-var deviceName = process.argv[2];
+deviceName = process.argv[2];
 try {
-  var response = yoctopuce.httpRequest(deviceName, "GET /api.json \r\n\r\n");
+  response = yoctopuce.httpRequest(deviceName, "GET /api.json \r\n\r\n");
 
   // Dirty parsing, response begins with OK\r\n\r\n, so drop it and parse it as JSON.
-  var json = response.substring(6);
-  var data = JSON.parse(json);
+  json = response.substring(6);
+  data = JSON.parse(json);
 
-  util.log("Response:\n" + util.inspect(data, { showHidden:true, depth:null }))
-}
-catch (ex) {
+  util.log("Response:\n" + util.inspect(data, { showHidden : true, depth : null }));
+} catch (ex) {
   util.log(ex);
   util.log(util.format("Error making http request to device %s.", deviceName));
 }

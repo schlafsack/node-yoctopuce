@@ -23,19 +23,19 @@
  */
 
 var util = require('util');
+var yoctopuce, functionClass, functionId, functions, i;
 
 if (process.argv.length < 3) {
   util.log("Use: node getFunctionsByClass.js functionclass <functionId>");
   process.exit();
 }
 
-var yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+yoctopuce = require('../');
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
-var functionClass = process.argv[2];
-var functionId = parseInt(process.argv[3]);
+functionClass = process.argv[2];
+functionId = parseInt(process.argv[3], 0);
 
-var functions;
 if (functionId) {
   functions = yoctopuce.getFunctionsByClass(functionClass, functionId);
 } else {
@@ -44,7 +44,7 @@ if (functionId) {
 
 if (Array.isArray(functions)) {
   util.log(util.format("%d functions found:", functions.length));
-  for (var k in functions) {
-    util.log(util.format("Function found with id %d.", functions[k]));
+  for (i = 0; i < functions.length; i++) {
+    util.log(util.format("Function found with id %d.", functions[i]));
   }
 }

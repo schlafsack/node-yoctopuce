@@ -23,17 +23,18 @@
  */
 
 var util = require('util');
+var yoctopuce, logicalName, valid;
 
 if (process.argv.length < 3) {
   util.log("Use: node checkLogicalName.js logicalName");
   process.exit();
 }
 
-var yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+yoctopuce = require('../');
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
-var logicalName = process.argv[2];
-var valid = yoctopuce.checkLogicalName(logicalName);
+logicalName = process.argv[2];
+valid = yoctopuce.checkLogicalName(logicalName);
 if (valid) {
   util.log(util.format("Logical name %s is valid", logicalName));
 } else {

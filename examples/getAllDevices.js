@@ -24,15 +24,15 @@
 
 var util = require('util');
 var yoctopuce = require('../');
+var devices, i;
 
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
-var devices = yoctopuce.getAllDevices();
-if(Array.isArray(devices))
-{
+devices = yoctopuce.getAllDevices();
+if (Array.isArray(devices)) {
   util.log(util.format("%d devices found:", devices.length));
-  for(var k in devices) {
-    util.log(util.format("Device found with id %d.", devices[k]));
+  for (i = 0; i < devices.length; i++) {
+    util.log(util.format("Device found with id %d.", devices[i]));
   }
 }
 

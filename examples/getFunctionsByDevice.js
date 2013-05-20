@@ -23,19 +23,19 @@
  */
 
 var util = require('util');
+var yoctopuce, deviceId, functionId, functions, i;
 
 if (process.argv.length < 3) {
   util.log("Use: node getFunctionsByDevice.js deviceId <functionId>");
   process.exit();
 }
 
-var yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+yoctopuce = require('../');
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
-var deviceId = parseInt(process.argv[2]);
-var functionId = parseInt(process.argv[3]);
+deviceId = parseInt(process.argv[2], 0);
+functionId = parseInt(process.argv[3], 0);
 
-var functions;
 if (functionId) {
   functions = yoctopuce.getFunctionsByDevice(deviceId, functionId);
 } else {
@@ -44,7 +44,7 @@ if (functionId) {
 
 if (Array.isArray(functions)) {
   util.log(util.format("%d functions found:", functions.length));
-  for (var k in functions) {
-    util.log(util.format("Function found with id %d.", functions[k]));
+  for (i = 0; i < functions.length; i++) {
+    util.log(util.format("Function found with id %d.", functions[i]));
   }
 }

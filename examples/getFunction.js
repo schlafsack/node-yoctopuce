@@ -23,22 +23,22 @@
  */
 
 var util = require('util');
+var yoctopuce, functionClass, functionName, fnct;
 
 if (process.argv.length < 4) {
   util.log("Use: node getFunction.js functionclass function");
   process.exit();
 }
 
-var yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+yoctopuce = require('../');
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
-var functionClass = process.argv[2];
-var functionName = process.argv[3];
+functionClass = process.argv[2];
+functionName = process.argv[3];
 try {
-  var fnct = yoctopuce.getFunction(functionClass, functionName);
+  fnct = yoctopuce.getFunction(functionClass, functionName);
   util.log(util.format("Function %s:%s found with id %d.", functionClass, functionName, fnct));
-}
-catch (ex) {
+} catch (ex) {
   util.log(ex);
   util.log(util.format("Error getting function %s:%s", functionClass, functionName));
 }

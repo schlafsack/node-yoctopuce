@@ -23,21 +23,21 @@
  */
 
 var util = require('util');
+var yoctopuce, deviceId, devicePath;
 
 if (process.argv.length < 3) {
   util.log("Use: node getDevicePath.js deviceId");
   process.exit();
 }
 
-var yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+yoctopuce = require('../');
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
-var deviceId = parseInt(process.argv[2]);
+deviceId = parseInt(process.argv[2], 0);
 try {
-  var devicePath = yoctopuce.getDevicePath(deviceId);
-  util.log("Device Path:\n" + util.inspect(devicePath, { showHidden:true, depth:null }))
-}
-catch (ex) {
+  devicePath = yoctopuce.getDevicePath(deviceId);
+  util.log("Device Path:\n" + util.inspect(devicePath, { showHidden : true, depth : null }));
+} catch (ex) {
   util.log(ex);
   util.log(util.format("Error getting path for device %d.", deviceId));
 }

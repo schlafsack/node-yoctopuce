@@ -23,21 +23,21 @@
  */
 
 var util = require('util');
+var yoctopuce, functionId, functionInfo;
 
 if (process.argv.length < 3) {
   util.log("Use: node getFunctionInfo.js functionId");
   process.exit();
 }
 
-var yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+yoctopuce = require('../');
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
-var functionId = parseInt(process.argv[2]);
+functionId = parseInt(process.argv[2], 0);
 try {
-  var functionInfo = yoctopuce.getFunctionInfo(functionId);
-  util.log("Function Info:\n" + util.inspect(functionInfo, { showHidden:true, depth:null }))
-}
-catch (ex) {
+  functionInfo = yoctopuce.getFunctionInfo(functionId);
+  util.log("Function Info:\n" + util.inspect(functionInfo, { showHidden : true, depth : null }));
+} catch (ex) {
   util.log(ex);
   util.log(util.format("Error getting info for function %d.", functionId));
 }

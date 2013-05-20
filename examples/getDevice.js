@@ -23,21 +23,21 @@
  */
 
 var util = require('util');
+var yoctopuce, device;
 
 if (process.argv.length < 3) {
   util.log("Use: node getDevice.js devicename");
   process.exit();
 }
 
-var yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+yoctopuce = require('../');
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
 var deviceName = process.argv[2];
 try {
-  var device = yoctopuce.getDevice(deviceName);
+  device = yoctopuce.getDevice(deviceName);
   util.log(util.format("Device %s found with id %d.", deviceName, device));
-}
-catch (ex) {
+} catch (ex) {
   util.log(ex);
   util.log(util.format("Error getting device %s.", deviceName));
 }
