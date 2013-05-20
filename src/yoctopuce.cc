@@ -56,6 +56,7 @@ namespace node_yoctopuce {
     queue<Event*> Yoctopuce::g_event_queue;
     uv_mutex_t Yoctopuce::g_event_queue_mutex;
     uv_async_t Yoctopuce::g_event_async;
+    uv_mutex_t Yoctopuce::g_http_request_mutex;
 
     void Yoctopuce::Initialize(Handle<Object> target) {
         HandleScope scope;
@@ -81,6 +82,9 @@ namespace node_yoctopuce {
         uv_mutex_init(&g_event_queue_mutex);
         uv_async_init(uv_default_loop(), &g_event_async, onEvent);
         uv_unref(reinterpret_cast<uv_handle_t*>(&g_event_async));
+
+        // Set up for http requests
+        uv_mutex_init(&g_http_request_mutex);
 
         // Initialise YAPI.
         char errmsg[YOCTO_ERRMSG_LEN];
@@ -112,6 +116,7 @@ namespace node_yoctopuce {
         // Clean up
         uv_close(reinterpret_cast<uv_handle_t*>(&g_event_async), NULL);
         uv_mutex_destroy(&g_event_queue_mutex);
+        uv_mutex_destroy(&g_http_request_mutex);
         g_target_handle.Clear();
 
         // Free the API.
@@ -121,7 +126,7 @@ namespace node_yoctopuce {
     Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args) {
         HandleScope scope;
         char errmsg[YOCTO_ERRMSG_LEN];
-        if (yapiUpdateDeviceList(false, errmsg) != YAPI_SUCCESS) {
+        if (YISERR(yapiUpdateDeviceList(false, errmsg))) {
             THROW("UpdateDeviceList failed: ", errmsg, ex);
             return scope.Close(ex);
         }
@@ -131,7 +136,7 @@ namespace node_yoctopuce {
     Handle<Value> Yoctopuce::HandleEvents(const Arguments& args) {
         HandleScope scope;
         char errmsg[YOCTO_ERRMSG_LEN];
-        if (yapiHandleEvents(errmsg) != YAPI_SUCCESS) {
+        if (YISERR(yapiHandleEvents(errmsg))) {
             THROW("HandleEvents failed: ", errmsg, ex);
             return scope.Close(ex);
         }
@@ -176,9 +181,9 @@ namespace node_yoctopuce {
 
         char errmsg[YOCTO_ERRMSG_LEN];
         const char* c_arg = *arg;
-        YAPI_DEVICE device = yapiGetDevice(c_arg, errmsg);
+        YAPI_DEVICE device;
 
-        if (YISERR(device)) {
+        if (YISERR(device = yapiGetDevice(c_arg, errmsg))) {
             THROW("GetDevice failed: ", errmsg, ex);
             return scope.Close(ex);
         }
@@ -196,8 +201,8 @@ namespace node_yoctopuce {
         YAPI_DEVICE *devices = new YAPI_DEVICE[elements];
         int ret, required_size;
 
-        ret = yapiGetAllDevices(devices, elements, &required_size, errmsg);
-        if (YISERR(ret)) {
+        if (YISERR(ret = yapiGetAllDevices(devices, elements, 
+            &required_size, errmsg))) {
             delete[] devices;
             THROW("GetAllDevices failed: ", errmsg, ex);
             return scope.Close(ex);
@@ -207,8 +212,8 @@ namespace node_yoctopuce {
             elements = required_size / sizeof(YAPI_DEVICE);
             init_size = elements * sizeof(YAPI_DEVICE);
             devices = new YAPI_DEVICE[elements];
-            ret = yapiGetAllDevices(devices, elements, &required_size, errmsg);
-            if (YISERR(ret)) {
+            if (YISERR(ret = yapiGetAllDevices(devices, elements, 
+                &required_size, errmsg))) {
                 delete[] devices;
                 THROW("GetAllDevices failed: ", errmsg, ex);
                 return scope.Close(ex);
@@ -269,17 +274,18 @@ namespace node_yoctopuce {
 
         char errmsg[YOCTO_ERRMSG_LEN];
         char root_device[YOCTO_SERIAL_LEN];
-        int ret, required_size;
+        int required_size;
 
-        ret = yapiGetDevicePath(device_id, root_device, NULL, 0, &required_size, errmsg);
-        if (YISERR(ret)) {
+        if (YISERR(yapiGetDevicePath(device_id, root_device, NULL, 
+            0, &required_size, errmsg))) {
             THROW("GetDevicePath failed: ", errmsg, ex);
             return scope.Close(ex);
         }
 
         char *sub_path = new char[required_size];
-        ret = yapiGetDevicePath(device_id, root_device, sub_path, required_size, NULL, errmsg);
-        if (YISERR(ret)) {
+        
+        if (YISERR(yapiGetDevicePath(device_id, root_device, sub_path,
+            required_size, NULL, errmsg))) {
             delete sub_path;
             THROW("GetDevicePath failed: ", errmsg, ex);
             return scope.Close(ex);
@@ -309,10 +315,9 @@ namespace node_yoctopuce {
         char errmsg[YOCTO_ERRMSG_LEN];
         const char* c_class_arg = *class_arg;
         const char* c_fnct_arg = *fnct_arg;
+        YAPI_FUNCTION function;
 
-        YAPI_FUNCTION function = yapiGetFunction(c_class_arg, c_fnct_arg, errmsg);
-
-        if (YISERR(function)) {
+        if (YISERR(function = yapiGetFunction(c_class_arg, c_fnct_arg, errmsg))) {
             THROW("GetDevice failed: ", errmsg, ex);
             return scope.Close(ex);
         }
@@ -350,8 +355,8 @@ namespace node_yoctopuce {
         YAPI_FUNCTION *functions = new YAPI_FUNCTION[elements];
         int ret, required_size;
 
-        ret = yapiGetFunctionsByClass(c_class_arg, prev_function, functions, init_size, &required_size, errmsg);
-        if (YISERR(ret)) {
+        if (YISERR(ret = yapiGetFunctionsByClass(c_class_arg, prev_function, 
+            functions, init_size, &required_size, errmsg))) {
             delete[] functions;
             THROW("GetFunctionsByClass failed: ", errmsg, ex);
             return scope.Close(ex);
@@ -361,8 +366,8 @@ namespace node_yoctopuce {
             elements = required_size / sizeof(YAPI_FUNCTION);
             init_size = elements * sizeof(YAPI_FUNCTION);
             functions = new YAPI_FUNCTION[elements];
-            ret = yapiGetFunctionsByClass(c_class_arg, prev_function, functions, init_size, NULL, errmsg);
-            if (YISERR(ret)) {
+            if (YISERR(ret = yapiGetFunctionsByClass(c_class_arg, prev_function, 
+                functions, init_size, NULL, errmsg))) {
                 delete[] functions;
                 THROW("GetFunctionsByClass failed: ", errmsg, ex);
                 return scope.Close(ex);
@@ -406,8 +411,8 @@ namespace node_yoctopuce {
         YAPI_FUNCTION *functions = new YAPI_FUNCTION[elements];
         int ret, required_size;
 
-        ret = yapiGetFunctionsByDevice(device_id, prev_function, functions, init_size, &required_size, errmsg);
-        if (YISERR(ret)) {
+        if (YISERR(ret = yapiGetFunctionsByDevice(device_id, prev_function, 
+            functions, init_size, &required_size, errmsg))) {
             delete[] functions;
             THROW("GetFunctionsByDevice failed: ", errmsg, ex);
             return scope.Close(ex);
@@ -417,8 +422,8 @@ namespace node_yoctopuce {
             elements = required_size / sizeof(YAPI_FUNCTION);
             init_size = elements * sizeof(YAPI_FUNCTION);
             functions = new YAPI_FUNCTION[elements];
-            ret = yapiGetFunctionsByDevice(device_id, prev_function, functions, init_size, NULL, errmsg);
-            if (YISERR(ret)) {
+            if (YISERR(ret = yapiGetFunctionsByDevice(device_id, prev_function, 
+                functions, init_size, NULL, errmsg))) {
                 delete[] functions;
                 THROW("GetFunctionsByDevice failed: ", errmsg, ex);
                 return scope.Close(ex);
@@ -487,20 +492,21 @@ namespace node_yoctopuce {
         char *c_reply;
         int reply_size;
         YIOHDL request_handle;
-        YRETCODE ret;
 
-        if (YISERR(ret = yapiHTTPRequestSyncStartEx(&request_handle, c_device,
+        uv_mutex_lock(&g_http_request_mutex);
+        if (YISERR(yapiHTTPRequestSyncStartEx(&request_handle, c_device,
             c_request, request_size, &c_reply, &reply_size, errmsg))) {
                 THROW("HttpRequest failed: ", errmsg, ex);
+                uv_mutex_unlock(&g_http_request_mutex);
                 return scope.Close(ex);
         }
-
         Local<String> reply = String::New(c_reply, reply_size);
-
-        if (YISERR(ret = yapiHTTPRequestSyncDone(&request_handle, errmsg))) {
+        if (YISERR(yapiHTTPRequestSyncDone(&request_handle, errmsg))) {
             THROW("HttpRequest failed: ", errmsg, ex);
+            uv_mutex_unlock(&g_http_request_mutex);
             return scope.Close(ex);
         }
+        uv_mutex_unlock(&g_http_request_mutex);
 
         return scope.Close(reply);
     }

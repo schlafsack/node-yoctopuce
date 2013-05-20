@@ -80,7 +80,7 @@ namespace node_yoctopuce {
         static uv_mutex_t g_event_queue_mutex;
         static queue<Event*> g_event_queue;
         static uv_async_t g_event_async;
-
+        static uv_mutex_t g_http_request_mutex;
     };
 
 }  // namespace node_yoctopuce
