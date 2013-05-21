@@ -26,8 +26,8 @@
 #ifndef SRC_YOCTOPUCE_H_
 #define SRC_YOCTOPUCE_H_
 
-#include <v8.h>
 #include <node.h>
+#include <v8.h>
 #include <yapi.h>
 
 #include <queue>

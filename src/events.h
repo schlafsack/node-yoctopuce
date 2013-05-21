@@ -26,117 +26,77 @@
 #ifndef SRC_EVENTS_H_
 #define SRC_EVENTS_H_
 
-#include <v8.h>
 #include <node.h>
+#include <v8.h>
 #include <yapi.h>
-#include <algorithm>
 #include <string>
+#include <algorithm>
 
 using v8::Handle;
-using v8::Local;
 using v8::Object;
-using v8::String;
-using v8::Integer;
 using v8::Value;
-using v8::Function;
-using v8::TryCatch;
-using v8::HandleScope;
-
-using node::FatalException;
 
 using std::string;
 
 namespace node_yoctopuce {
 
-    struct Event {
+    class Event {
+    public:
         virtual void dispatch(Handle<Object> context)=0;
-
-        void dispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]) {
-            HandleScope scope;
-            if (!context.IsEmpty()) {
-                Local<Value> dispatchValue = context->Get(String::NewSymbol("emit"));
-
-                // If the emit function has been bound call it; otherwise
-                // drop the events.
-                if (!dispatchValue.IsEmpty() && dispatchValue->IsFunction()) {
-                    Local<Function> dispatchFunction = Local<Function>::Cast(dispatchValue);
-                    TryCatch try_catch;
-                    dispatchFunction->Call(context, argc, argv);
-                    if (try_catch.HasCaught()) {
-                        FatalException(try_catch);
-                    }
-                }
-            }
-        }
-
-        virtual ~Event() {}
+        virtual ~Event();
+    protected:
+        virtual void dispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]);
     };
 
-    struct CharDataEvent : Event {
-        explicit inline CharDataEvent(const char *_data) : Event() {
-            data = _data ? string(_data) : string();
-        }
+    class CharDataEvent : public Event {
+    public:
+        explicit CharDataEvent(const char *_data);
+    protected:
         string data;
     };
 
-    struct LogEvent : CharDataEvent {
-        explicit inline LogEvent(const char *data)
-            : CharDataEvent(data) {}
-        inline virtual void dispatch(Handle<Object> context) {
-            int argc = 2;
-            string log = string(data);
-            log.erase(std::remove(log.begin(), log.end(), '\n'), log.end());
-            log.erase(std::remove(log.begin(), log.end(), '\r'), log.end());
-            Handle<Value> argv[2] = {String::NewSymbol("log"), String::New(log.c_str())};
-            dispatchToV8(context, argc, argv);
-        }
+    class LogEvent : public CharDataEvent {
+    public:
+        explicit LogEvent(const char *data);
+        virtual void dispatch(Handle<Object> context);
     };
 
-    struct FunctionUpdateEvent : CharDataEvent {
-        explicit inline FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data)
-            : CharDataEvent(data), fundescr(fundescr) {}
+    class FunctionUpdateEvent : public CharDataEvent {
+    public:
+        FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data);
+        virtual void dispatch(Handle<Object> context);
+    protected:
         YAPI_FUNCTION fundescr;
-        inline virtual void dispatch(Handle<Object> context) {
-            int argc = 3;
-            Handle<Value> argv[3] =
-            {String::NewSymbol("functionUpdate"), Integer::New(fundescr), String::New(data.c_str())};
-            dispatchToV8(context, argc, argv);
-        }
     };
 
-    struct DeviceEvent : Event {
-        explicit inline DeviceEvent(const char* name, YAPI_DEVICE device)
-            : Event(), name(name), device(device) {}
-        const char* name;
+    class DeviceEvent : public Event {
+    public:
+        explicit DeviceEvent(const char* name, YAPI_DEVICE device);
+        virtual void dispatch(Handle<Object> context);
+    protected:
         YAPI_DEVICE device;
-        inline virtual void dispatch(Handle<Object> context) {
-            int argc = 2;
-            Handle<Value> argv[2] = {String::NewSymbol(name), Integer::New(device)};
-            dispatchToV8(context, argc, argv);
-        }
+        const char* name;
     };
 
-    struct DeviceLogEvent : DeviceEvent {
-        explicit inline DeviceLogEvent(YAPI_DEVICE device)
-            : DeviceEvent("deviceLog", device) {}
+    class DeviceLogEvent : public DeviceEvent {
+    public:
+        explicit DeviceLogEvent(YAPI_DEVICE device);
     };
 
-    struct DeviceArrivalEvent : DeviceEvent {
-        explicit inline DeviceArrivalEvent(YAPI_DEVICE device)
-            : DeviceEvent("deviceArrival", device) {}
+    class DeviceArrivalEvent : public DeviceEvent {
+    public:
+        explicit DeviceArrivalEvent(YAPI_DEVICE device);
     };
 
-    struct DeviceChangeEvent : DeviceEvent {
-        explicit inline DeviceChangeEvent(YAPI_DEVICE device)
-            : DeviceEvent("deviceChange", device) {}
+    class DeviceChangeEvent : public DeviceEvent {
+    public:
+        explicit DeviceChangeEvent(YAPI_DEVICE device);
     };
 
-    struct DeviceRemovalEvent : DeviceEvent {
-        explicit inline DeviceRemovalEvent(YAPI_DEVICE device)
-            : DeviceEvent("deviceRemoval", device) {}
+    class DeviceRemovalEvent : public DeviceEvent {
+    public:
+        explicit DeviceRemovalEvent(YAPI_DEVICE device);
     };
-
-
 
 }  // namespace node_yoctopuce
 

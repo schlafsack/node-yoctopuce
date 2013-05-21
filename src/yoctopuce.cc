@@ -23,14 +23,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#include <yapi.h>
-#include <node.h>
-#include <v8.h>
-
-#include <queue>
-
 #include "./yoctopuce.h"
-#include "./events.h"
 
 using v8::HandleScope;
 using v8::Persistent;
@@ -39,6 +32,7 @@ using v8::String;
 using v8::Number;
 using v8::Array;
 using v8::Boolean;
+using v8::Local;
 using v8::Undefined;
 using v8::ThrowException;
 
@@ -201,22 +195,22 @@ namespace node_yoctopuce {
         YAPI_DEVICE *devices = new YAPI_DEVICE[elements];
         int ret, required_size;
 
-        if (YISERR(ret = yapiGetAllDevices(devices, elements, 
+        if (YISERR(ret = yapiGetAllDevices(devices, elements,
             &required_size, errmsg))) {
-            delete[] devices;
-            THROW("GetAllDevices failed: ", errmsg, ex);
-            return scope.Close(ex);
+                delete[] devices;
+                THROW("GetAllDevices failed: ", errmsg, ex);
+                return scope.Close(ex);
         }
         if (required_size > init_size) {
             delete [] devices;
             elements = required_size / sizeof(YAPI_DEVICE);
             init_size = elements * sizeof(YAPI_DEVICE);
             devices = new YAPI_DEVICE[elements];
-            if (YISERR(ret = yapiGetAllDevices(devices, elements, 
+            if (YISERR(ret = yapiGetAllDevices(devices, elements,
                 &required_size, errmsg))) {
-                delete[] devices;
-                THROW("GetAllDevices failed: ", errmsg, ex);
-                return scope.Close(ex);
+                    delete[] devices;
+                    THROW("GetAllDevices failed: ", errmsg, ex);
+                    return scope.Close(ex);
             }
         }
 
@@ -276,19 +270,19 @@ namespace node_yoctopuce {
         char root_device[YOCTO_SERIAL_LEN];
         int required_size;
 
-        if (YISERR(yapiGetDevicePath(device_id, root_device, NULL, 
+        if (YISERR(yapiGetDevicePath(device_id, root_device, NULL,
             0, &required_size, errmsg))) {
-            THROW("GetDevicePath failed: ", errmsg, ex);
-            return scope.Close(ex);
+                THROW("GetDevicePath failed: ", errmsg, ex);
+                return scope.Close(ex);
         }
 
         char *sub_path = new char[required_size];
-        
+
         if (YISERR(yapiGetDevicePath(device_id, root_device, sub_path,
             required_size, NULL, errmsg))) {
-            delete sub_path;
-            THROW("GetDevicePath failed: ", errmsg, ex);
-            return scope.Close(ex);
+                delete sub_path;
+                THROW("GetDevicePath failed: ", errmsg, ex);
+                return scope.Close(ex);
         }
 
         Local<Object> result = Object::New();
@@ -355,22 +349,22 @@ namespace node_yoctopuce {
         YAPI_FUNCTION *functions = new YAPI_FUNCTION[elements];
         int ret, required_size;
 
-        if (YISERR(ret = yapiGetFunctionsByClass(c_class_arg, prev_function, 
+        if (YISERR(ret = yapiGetFunctionsByClass(c_class_arg, prev_function,
             functions, init_size, &required_size, errmsg))) {
-            delete[] functions;
-            THROW("GetFunctionsByClass failed: ", errmsg, ex);
-            return scope.Close(ex);
+                delete[] functions;
+                THROW("GetFunctionsByClass failed: ", errmsg, ex);
+                return scope.Close(ex);
         }
         if (required_size > init_size) {
             delete [] functions;
             elements = required_size / sizeof(YAPI_FUNCTION);
             init_size = elements * sizeof(YAPI_FUNCTION);
             functions = new YAPI_FUNCTION[elements];
-            if (YISERR(ret = yapiGetFunctionsByClass(c_class_arg, prev_function, 
+            if (YISERR(ret = yapiGetFunctionsByClass(c_class_arg, prev_function,
                 functions, init_size, NULL, errmsg))) {
-                delete[] functions;
-                THROW("GetFunctionsByClass failed: ", errmsg, ex);
-                return scope.Close(ex);
+                    delete[] functions;
+                    THROW("GetFunctionsByClass failed: ", errmsg, ex);
+                    return scope.Close(ex);
             }
         }
 
@@ -411,22 +405,22 @@ namespace node_yoctopuce {
         YAPI_FUNCTION *functions = new YAPI_FUNCTION[elements];
         int ret, required_size;
 
-        if (YISERR(ret = yapiGetFunctionsByDevice(device_id, prev_function, 
+        if (YISERR(ret = yapiGetFunctionsByDevice(device_id, prev_function,
             functions, init_size, &required_size, errmsg))) {
-            delete[] functions;
-            THROW("GetFunctionsByDevice failed: ", errmsg, ex);
-            return scope.Close(ex);
+                delete[] functions;
+                THROW("GetFunctionsByDevice failed: ", errmsg, ex);
+                return scope.Close(ex);
         }
         if (required_size > init_size) {
             delete [] functions;
             elements = required_size / sizeof(YAPI_FUNCTION);
             init_size = elements * sizeof(YAPI_FUNCTION);
             functions = new YAPI_FUNCTION[elements];
-            if (YISERR(ret = yapiGetFunctionsByDevice(device_id, prev_function, 
+            if (YISERR(ret = yapiGetFunctionsByDevice(device_id, prev_function,
                 functions, init_size, NULL, errmsg))) {
-                delete[] functions;
-                THROW("GetFunctionsByDevice failed: ", errmsg, ex);
-                return scope.Close(ex);
+                    delete[] functions;
+                    THROW("GetFunctionsByDevice failed: ", errmsg, ex);
+                    return scope.Close(ex);
             }
         }
 
