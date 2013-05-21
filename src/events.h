@@ -59,13 +59,13 @@ namespace node_yoctopuce {
 
     class LogEvent : public CharDataEvent {
     public:
-        inline explicit LogEvent::LogEvent(const char *data) : CharDataEvent(data) {}
+        inline explicit LogEvent(const char *data) : CharDataEvent(data) {}
         virtual void dispatch(Handle<Object> context);
     };
 
     class FunctionUpdateEvent : public CharDataEvent {
     public:
-        inline explicit FunctionUpdateEvent::FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data)
+        inline explicit FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data)
             : CharDataEvent(data), fundescr(fundescr) {}
         virtual void dispatch(Handle<Object> context);
     protected:
@@ -78,8 +78,8 @@ namespace node_yoctopuce {
             : name(name), device(device) {}
         virtual void dispatch(Handle<Object> context);
     protected:
-        YAPI_DEVICE device;
         const char* name;
+        YAPI_DEVICE device;
     };
 
     class DeviceLogEvent : public DeviceEvent {
