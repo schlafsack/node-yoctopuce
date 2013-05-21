@@ -53,6 +53,9 @@ namespace node_yoctopuce {
         //  API Calls
         static Handle<Value> UpdateDeviceList(const Arguments& args);
         static Handle<Value> HandleEvents(const Arguments& args);
+        static Handle<Value> RegisterHub(const Arguments& args);
+        static Handle<Value> PreregisterHub(const Arguments& args);
+        static Handle<Value> UnregisterHub(const Arguments& args);
         static Handle<Value> CheckLogicalName(const Arguments& args);
         static Handle<Value> GetApiVersion(const Arguments& args);
         static Handle<Value> GetDevice(const Arguments& args);

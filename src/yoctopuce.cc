@@ -60,6 +60,9 @@ namespace node_yoctopuce {
         // Expose API methods
         NODE_SET_METHOD(g_target_handle, "updateDeviceList", UpdateDeviceList);
         NODE_SET_METHOD(g_target_handle, "handleEvents", HandleEvents);
+        NODE_SET_METHOD(g_target_handle, "registerHub", RegisterHub);
+        NODE_SET_METHOD(g_target_handle, "preregisterHub", PreregisterHub);
+        NODE_SET_METHOD(g_target_handle, "unregisterHub", UnregisterHub);
         NODE_SET_METHOD(g_target_handle, "checkLogicalName", CheckLogicalName);
         NODE_SET_METHOD(g_target_handle, "getApiVersion", GetApiVersion);
         NODE_SET_METHOD(g_target_handle, "getDevice", GetDevice);
@@ -134,6 +137,57 @@ namespace node_yoctopuce {
             THROW("HandleEvents failed: ", errmsg, ex);
             return scope.Close(ex);
         }
+        return scope.Close(Undefined());
+    }
+
+    Handle<Value> Yoctopuce::RegisterHub(const Arguments& args) {
+        HandleScope scope;
+
+        if (args.Length() != 1 || !args[0]->IsString()) {
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
+        }
+        String::Utf8Value arg(args[0]->ToString());
+
+        const char *c_arg = *arg;
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        if (YISERR(yapiRegisterHub(c_arg, errmsg))) {
+            THROW("RegisterHub failed: ", errmsg, ex);
+            return scope.Close(ex);
+        }
+
+        return scope.Close(Undefined());
+    }
+
+    Handle<Value> Yoctopuce::PreregisterHub(const Arguments& args) {
+        HandleScope scope;
+
+        if (args.Length() != 1 || !args[0]->IsString()) {
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
+        }
+        String::Utf8Value arg(args[0]->ToString());
+
+        const char *c_arg = *arg;
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        if (YISERR(yapiPreregisterHub(c_arg, errmsg))) {
+            THROW("PreregisterHub failed: ", errmsg, ex);
+            return scope.Close(ex);
+        }
+        return scope.Close(Undefined());
+    }
+
+    Handle<Value> Yoctopuce::UnregisterHub(const Arguments& args) {
+        HandleScope scope;
+
+        if (args.Length() != 1 || !args[0]->IsString()) {
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
+        }
+        String::Utf8Value arg(args[0]->ToString());
+
+        const char *c_arg = *arg;
+        yapiUnregisterHub(c_arg);
+
         return scope.Close(Undefined());
     }
 
