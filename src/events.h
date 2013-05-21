@@ -43,27 +43,30 @@ namespace node_yoctopuce {
     class Event {
     public:
         virtual void dispatch(Handle<Object> context)=0;
-        virtual ~Event();
+        virtual ~Event() {}
     protected:
-        virtual void dispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]);
+        static void dispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]);
     };
 
     class CharDataEvent : public Event {
     public:
-        explicit CharDataEvent(const char *_data);
+        inline explicit CharDataEvent(const char *_data) {
+            data = _data ? string(_data) : string();
+        }
     protected:
         string data;
     };
 
     class LogEvent : public CharDataEvent {
     public:
-        explicit LogEvent(const char *data);
+        inline explicit LogEvent::LogEvent(const char *data) : CharDataEvent(data) {}
         virtual void dispatch(Handle<Object> context);
     };
 
     class FunctionUpdateEvent : public CharDataEvent {
     public:
-        FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data);
+        inline explicit FunctionUpdateEvent::FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data)
+            : CharDataEvent(data), fundescr(fundescr) {}
         virtual void dispatch(Handle<Object> context);
     protected:
         YAPI_FUNCTION fundescr;
@@ -71,7 +74,8 @@ namespace node_yoctopuce {
 
     class DeviceEvent : public Event {
     public:
-        explicit DeviceEvent(const char* name, YAPI_DEVICE device);
+        inline explicit DeviceEvent(const char* name, YAPI_DEVICE device)
+            : name(name), device(device) {}
         virtual void dispatch(Handle<Object> context);
     protected:
         YAPI_DEVICE device;
@@ -80,22 +84,26 @@ namespace node_yoctopuce {
 
     class DeviceLogEvent : public DeviceEvent {
     public:
-        explicit DeviceLogEvent(YAPI_DEVICE device);
+        inline explicit DeviceLogEvent(YAPI_DEVICE device)
+            : DeviceEvent("deviceLog", device) {}
     };
 
     class DeviceArrivalEvent : public DeviceEvent {
     public:
-        explicit DeviceArrivalEvent(YAPI_DEVICE device);
+        inline explicit DeviceArrivalEvent(YAPI_DEVICE device)
+            : DeviceEvent("deviceArrival", device) {}
     };
 
     class DeviceChangeEvent : public DeviceEvent {
     public:
-        explicit DeviceChangeEvent(YAPI_DEVICE device);
+        inline explicit DeviceChangeEvent(YAPI_DEVICE device)
+            : DeviceEvent("deviceChange", device) {}
     };
 
     class DeviceRemovalEvent : public DeviceEvent {
     public:
-        explicit DeviceRemovalEvent(YAPI_DEVICE device);
+        inline explicit DeviceRemovalEvent(YAPI_DEVICE device)
+            : DeviceEvent("deviceRemoval", device) {}
     };
 
 }  // namespace node_yoctopuce
