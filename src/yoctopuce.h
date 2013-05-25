@@ -44,6 +44,19 @@ using node::ObjectWrap;
 
 namespace node_yoctopuce {
 
+    struct HttpRequestBaton {
+        uv_work_t* req;
+        const char *c_device;
+        const char *c_request;
+        int request_size;
+        v8::Persistent<v8::Value> callback;
+        YIOHDL request_handle;
+        YRETCODE result;
+        char errmsg[YOCTO_ERRMSG_LEN];
+        char *c_reply;
+        int reply_size;
+    };
+
     class Yoctopuce : public ObjectWrap {
     public:
         static void Initialize(Handle<Object> target);
@@ -53,6 +66,9 @@ namespace node_yoctopuce {
         //  API Calls
         static Handle<Value> UpdateDeviceList(const Arguments& args);
         static Handle<Value> HandleEvents(const Arguments& args);
+        static Handle<Value> RegisterHub(const Arguments& args);
+        static Handle<Value> PreregisterHub(const Arguments& args);
+        static Handle<Value> UnregisterHub(const Arguments& args);
         static Handle<Value> CheckLogicalName(const Arguments& args);
         static Handle<Value> GetApiVersion(const Arguments& args);
         static Handle<Value> GetDevice(const Arguments& args);
@@ -64,6 +80,10 @@ namespace node_yoctopuce {
         static Handle<Value> GetFunctionsByDevice(const Arguments& args);
         static Handle<Value> GetFunctionInfo(const Arguments& args);
         static Handle<Value> HttpRequest(const Arguments& args);
+
+        static Handle<Value> HttpRequestAsync(const Arguments& args);
+        static void onHttpRequest(uv_work_t* req);
+        static void onAfterHttpRequest(uv_work_t* req);
 
         //  Events
         static void fwdLogEvent(const char* log, u32 loglen);
