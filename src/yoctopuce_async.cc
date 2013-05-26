@@ -34,8 +34,13 @@ using v8::Local;
 using v8::Handle;
 using v8::Arguments;
 using v8::Value;
+using v8::TryCatch;
 using v8::Undefined;
 using v8::ThrowException;
+
+using node::FatalException;
+
+using std::string;
 
 namespace node_yoctopuce {
 
@@ -71,25 +76,43 @@ namespace node_yoctopuce {
 
     void Yoctopuce::OnHttpRequest(uv_work_t* req) {
         HttpRequestBaton* baton = static_cast<HttpRequestBaton*>(req->data);
+
+        char errmsg[YOCTO_ERRMSG_LEN];
+        char *response;
+        int response_size;
+        YIOHDL request_handle;
+
         uv_mutex_lock(&http_request_mutex);
-        baton->result = yapiHTTPRequestSyncStartEx(&baton->request_handle, baton->device.c_str(),
-            baton->request.c_str(), baton->request.length(), &baton->reply, &baton->reply_size, baton->errmsg);
+        baton->result = yapiHTTPRequestSyncStartEx(&request_handle, baton->device.c_str(),
+            baton->request.c_str(), baton->request.length(), &response, &response_size, errmsg);
+        if(YISERR(baton->result)) {
+            baton->error = string(errmsg);
+        } else {
+            baton->response = string(response, response_size);
+            yapiHTTPRequestSyncDone(&request_handle, errmsg);
+        }
+        uv_mutex_unlock(&http_request_mutex);
     }
 
     void Yoctopuce::OnAfterHttpRequest(uv_work_t* req) {
         HandleScope scope;
         HttpRequestBaton* baton = static_cast<HttpRequestBaton*>(req->data);
+
         Handle<Value> argv[2];
         if (YISERR(baton->result)) {
-            argv[0] = String::New(baton->errmsg);
+            argv[0] = String::New(baton->error.c_str());
             argv[1] = Undefined();
         } else {
-            yapiHTTPRequestSyncDone(&baton->request_handle, baton->errmsg);
             argv[0] = Undefined();
-            argv[1] = String::New(baton->reply, baton->reply_size);
+            argv[1] = String::New(baton->response.c_str());
         }
-        uv_mutex_unlock(&http_request_mutex);
+
+        TryCatch try_catch;
         Function::Cast(*baton->callback)->Call(target_handle , 2, argv);
+        if (try_catch.HasCaught()) {
+            FatalException(try_catch);
+        }
+
         baton->callback.Dispose();
         delete baton;
     }

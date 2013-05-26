@@ -46,12 +46,10 @@ namespace node_yoctopuce {
         uv_work_t* work;
         std::string device;
         std::string request;
-        v8::Persistent<v8::Value> callback;
-        YIOHDL request_handle;
+        std::string response;
+        std::string error;
         YRETCODE result;
-        char errmsg[YOCTO_ERRMSG_LEN];
-        char *reply;
-        int reply_size;
+        v8::Persistent<v8::Value> callback;
     };
 
     class Yoctopuce : public node::ObjectWrap {
