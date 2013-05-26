@@ -45,11 +45,12 @@ namespace node_yoctopuce {
     struct HttpRequestBaton {
         uv_work_t* work;
         std::string device;
-        std::string request;
+        std::string path;
         std::string response;
         std::string error;
         YRETCODE result;
-        v8::Persistent<v8::Value> callback;
+        v8::Persistent<v8::Function> callback;
+        v8::Persistent<v8::Object> request;
     };
 
     class Yoctopuce : public node::ObjectWrap {
@@ -80,6 +81,9 @@ namespace node_yoctopuce {
         static v8::Handle<v8::Value> HttpRequestAsync(const v8::Arguments& args);
         static void OnHttpRequest(uv_work_t* req);
         static void OnAfterHttpRequest(uv_work_t* req);
+
+        // Utils
+        static void EmitError(v8::Handle<v8::Object> context, std::string error);
 
         //  Events
         static void FwdLogEvent(const char* log, u32 loglen);

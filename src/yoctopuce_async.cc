@@ -35,6 +35,7 @@ using v8::Handle;
 using v8::Arguments;
 using v8::Value;
 using v8::TryCatch;
+using v8::Object;
 using v8::Undefined;
 using v8::ThrowException;
 
@@ -55,19 +56,25 @@ namespace node_yoctopuce {
         if (args.Length() < 2 || !args[1]->IsString()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 2 must be a string"))));
         }
-        String::Utf8Value request_arg(args[1]->ToString());
+        String::Utf8Value path_arg(args[1]->ToString());
 
         if (args.Length() < 3 || !args[2]->IsFunction()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 3 must be a function"))));
         }
         Local<Value> callback_arg = args[2];
 
+        if (args.Length() < 4 || !args[3]->IsObject()) {
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 3 must be an object"))));
+        }
+        Local<Value> request_arg = args[3];
+
         uv_work_t* work = new uv_work_t();
         HttpRequestBaton *baton = new HttpRequestBaton();
         baton->work = work;
-        baton->device = std::string(*device_arg);
-        baton->request = std::string(*request_arg);
-        baton->callback = Persistent<Value>::New(callback_arg);
+        baton->device = string(*device_arg);
+        baton->path = string(*path_arg);
+        baton->callback = Persistent<Function>::New(Handle<Function>::Cast(callback_arg));
+        baton->request = Persistent<Object>::New(Handle<Object>::Cast(request_arg));
         work->data = baton;
 
         uv_queue_work(uv_default_loop(), work, OnHttpRequest, (uv_after_work_cb)OnAfterHttpRequest);
@@ -84,7 +91,7 @@ namespace node_yoctopuce {
 
         uv_mutex_lock(&http_request_mutex);
         baton->result = yapiHTTPRequestSyncStartEx(&request_handle, baton->device.c_str(),
-            baton->request.c_str(), baton->request.length(), &response, &response_size, errmsg);
+            baton->path.c_str(), baton->path.length(), &response, &response_size, errmsg);
         if(YISERR(baton->result)) {
             baton->error = string(errmsg);
         } else {
@@ -98,23 +105,37 @@ namespace node_yoctopuce {
         HandleScope scope;
         HttpRequestBaton* baton = static_cast<HttpRequestBaton*>(req->data);
 
-        Handle<Value> argv[2];
         if (YISERR(baton->result)) {
-            argv[0] = String::New(baton->error.c_str());
-            argv[1] = Undefined();
+            EmitError(baton->request, baton->error);
         } else {
-            argv[0] = Undefined();
-            argv[1] = String::New(baton->response.c_str());
-        }
-
-        TryCatch try_catch;
-        Function::Cast(*baton->callback)->Call(target_handle , 2, argv);
-        if (try_catch.HasCaught()) {
-            FatalException(try_catch);
+            Handle<Value> argv[1];
+            argv[0] = String::New(baton->response.c_str());
+            TryCatch try_catch;
+            Function::Cast(*baton->callback)->Call(target_handle , 1, argv);
+            if (try_catch.HasCaught()) {
+                FatalException(try_catch);
+            }
         }
 
         baton->callback.Dispose();
+        baton->request.Dispose();
         delete baton;
+    }
+
+    void Yoctopuce::EmitError(Handle<Object> context, string error) {
+        HandleScope scope;
+        Local<Value> ev = context->Get(String::NewSymbol("emit"));
+        // If the emit function has been bound call it; otherwise
+        // drop the events.
+        if (!ev.IsEmpty() && ev->IsFunction()) {
+            Local<Function> emitter = Local<Function>::Cast(ev);
+            Handle<Value> argv[2] = {String::NewSymbol("error"), String::New(error.c_str())};
+            TryCatch try_catch;
+            emitter->Call(context, 2, argv);
+            if (try_catch.HasCaught()) {
+                FatalException(try_catch);
+            }
+        }
     }
 
 }  // namespace node_yoctopuce

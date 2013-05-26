@@ -45,14 +45,14 @@ namespace node_yoctopuce {
     void Event::DispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]) {
         HandleScope scope;
         if (!context.IsEmpty()) {
-            Local<Value> dispatch_value = context->Get(String::NewSymbol("emit"));
+            Local<Value> ev = context->Get(String::NewSymbol("emit"));
 
             // If the emit function has been bound call it; otherwise
             // drop the events.
-            if (!dispatch_value.IsEmpty() && dispatch_value->IsFunction()) {
-                Local<Function> dispatchFunction = Local<Function>::Cast(dispatch_value);
+            if (!ev.IsEmpty() && ev->IsFunction()) {
+                Local<Function> emitter = Local<Function>::Cast(ev);
                 TryCatch try_catch;
-                dispatchFunction->Call(context, argc, argv);
+                emitter->Call(context, argc, argv);
                 if (try_catch.HasCaught()) {
                     FatalException(try_catch);
                 }
