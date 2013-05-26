@@ -83,15 +83,15 @@ namespace node_yoctopuce {
 
     void Yoctopuce::OnHttpRequest(uv_work_t* req) {
         HttpRequestBaton* baton = static_cast<HttpRequestBaton*>(req->data);
-
+        const char *device = baton->device.c_str();
+        const char *path = baton->path.c_str();
+        int path_size = static_cast<int>(baton->path.size());
         char errmsg[YOCTO_ERRMSG_LEN];
         char *response;
         int response_size;
         YIOHDL request_handle;
-
         uv_mutex_lock(&http_request_mutex);
-        baton->result = yapiHTTPRequestSyncStartEx(&request_handle, baton->device.c_str(),
-            baton->path.c_str(), baton->path.length(), &response, &response_size, errmsg);
+        baton->result = yapiHTTPRequestSyncStartEx(&request_handle, device, path, path_size, &response, &response_size, errmsg);
         if(YISERR(baton->result)) {
             baton->error = string(errmsg);
         } else {
@@ -104,7 +104,6 @@ namespace node_yoctopuce {
     void Yoctopuce::OnAfterHttpRequest(uv_work_t* req) {
         HandleScope scope;
         HttpRequestBaton* baton = static_cast<HttpRequestBaton*>(req->data);
-
         if (YISERR(baton->result)) {
             EmitError(baton->request, baton->error);
         } else {
@@ -116,7 +115,6 @@ namespace node_yoctopuce {
                 FatalException(try_catch);
             }
         }
-
         baton->callback.Dispose();
         baton->request.Dispose();
         delete baton;

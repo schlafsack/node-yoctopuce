@@ -44,13 +44,13 @@ namespace node_yoctopuce {
 
     struct HttpRequestBaton {
         uv_work_t* work;
+        v8::Persistent<v8::Function> callback;
+        v8::Persistent<v8::Object> request;
         std::string device;
         std::string path;
         std::string response;
         std::string error;
         YRETCODE result;
-        v8::Persistent<v8::Function> callback;
-        v8::Persistent<v8::Object> request;
     };
 
     class Yoctopuce : public node::ObjectWrap {
