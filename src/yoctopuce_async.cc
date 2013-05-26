@@ -31,6 +31,9 @@ using v8::Exception;
 using v8::String;
 using v8::Function;
 using v8::Local;
+using v8::Handle;
+using v8::Arguments;
+using v8::Value;
 using v8::Undefined;
 using v8::ThrowException;
 
@@ -54,41 +57,39 @@ namespace node_yoctopuce {
         }
         Local<Value> callback_arg = args[2];
 
-        uv_work_t* req = new uv_work_t();
+        uv_work_t* work = new uv_work_t();
         HttpRequestBaton *baton = new HttpRequestBaton();
-        baton->req=req;
-        baton->c_device = *device_arg;
-        baton->c_request = *request_arg;
-        baton->callback = v8::Persistent<v8::Value>::New(callback_arg); 
-        req->data = baton;
+        baton->work = work;
+        baton->device = std::string(*device_arg);
+        baton->request = std::string(*request_arg);
+        baton->callback = Persistent<Value>::New(callback_arg);
+        work->data = baton;
 
-        uv_queue_work(uv_default_loop(), req, onHttpRequest, (uv_after_work_cb)onAfterHttpRequest);
-
+        uv_queue_work(uv_default_loop(), work, OnHttpRequest, (uv_after_work_cb)OnAfterHttpRequest);
         return scope.Close(Undefined());
     }
 
-    void Yoctopuce::onHttpRequest(uv_work_t* req) {
+    void Yoctopuce::OnHttpRequest(uv_work_t* req) {
         HttpRequestBaton* baton = static_cast<HttpRequestBaton*>(req->data);
-        uv_mutex_lock(&g_http_request_mutex);
-        baton->result = yapiHTTPRequestSyncStartEx(&baton->request_handle, baton->c_device,
-            baton->c_request, baton->request_size, &baton->c_reply, &baton->reply_size, baton->errmsg);
-        fprintf(stderr, "onHttpRequest %s %s\n", baton->c_device, baton->c_request);
+        uv_mutex_lock(&http_request_mutex);
+        baton->result = yapiHTTPRequestSyncStartEx(&baton->request_handle, baton->device.c_str(),
+            baton->request.c_str(), baton->request.length(), &baton->reply, &baton->reply_size, baton->errmsg);
     }
 
-    void Yoctopuce::onAfterHttpRequest(uv_work_t* req) {
+    void Yoctopuce::OnAfterHttpRequest(uv_work_t* req) {
+        HandleScope scope;
         HttpRequestBaton* baton = static_cast<HttpRequestBaton*>(req->data);
-
-        if (YISERR(yapiHTTPRequestSyncDone(&baton->request_handle, baton->errmsg))) {
-            // what to do?
+        Handle<Value> argv[2];
+        if (YISERR(baton->result)) {
+            argv[0] = String::New(baton->errmsg);
+            argv[1] = Undefined();
+        } else {
+            yapiHTTPRequestSyncDone(&baton->request_handle, baton->errmsg);
+            argv[0] = Undefined();
+            argv[1] = String::New(baton->reply, baton->reply_size);
         }
-        uv_mutex_unlock(&g_http_request_mutex);
-
-        fprintf(stderr, "onAfterHttpRequest %s %s\n", baton->c_reply, baton->errmsg);
-
-        Local<String> reply = String::New(baton->c_reply, baton->reply_size);
-        v8::Handle<v8::Value> argv[1] = { reply };
-        Function::Cast(*baton->callback)->Call(g_target_handle , 1, argv);
-
+        uv_mutex_unlock(&http_request_mutex);
+        Function::Cast(*baton->callback)->Call(target_handle , 2, argv);
         baton->callback.Dispose();
         delete baton;
     }

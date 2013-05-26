@@ -25,6 +25,8 @@
 
 #include "./events.h"
 
+using v8::Object;
+using v8::Handle;
 using v8::Function;
 using v8::Value;
 using v8::Local;
@@ -40,15 +42,15 @@ using node::FatalException;
 
 namespace node_yoctopuce {
 
-    void Event::dispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]) {
+    void Event::DispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]) {
         HandleScope scope;
         if (!context.IsEmpty()) {
-            Local<Value> dispatchValue = context->Get(String::NewSymbol("emit"));
+            Local<Value> dispatch_value = context->Get(String::NewSymbol("emit"));
 
             // If the emit function has been bound call it; otherwise
             // drop the events.
-            if (!dispatchValue.IsEmpty() && dispatchValue->IsFunction()) {
-                Local<Function> dispatchFunction = Local<Function>::Cast(dispatchValue);
+            if (!dispatch_value.IsEmpty() && dispatch_value->IsFunction()) {
+                Local<Function> dispatchFunction = Local<Function>::Cast(dispatch_value);
                 TryCatch try_catch;
                 dispatchFunction->Call(context, argc, argv);
                 if (try_catch.HasCaught()) {
@@ -58,26 +60,25 @@ namespace node_yoctopuce {
         }
     }
 
-    void LogEvent::dispatch(Handle<Object> context) {
+    void LogEvent::Dispatch(Handle<Object> context) {
         int argc = 2;
         string log = string(data);
         log.erase(std::remove(log.begin(), log.end(), '\n'), log.end());
         log.erase(std::remove(log.begin(), log.end(), '\r'), log.end());
         Handle<Value> argv[2] = {String::NewSymbol("log"), String::New(log.c_str())};
-        dispatchToV8(context, argc, argv);
+        DispatchToV8(context, argc, argv);
     }
 
-    void FunctionUpdateEvent::dispatch(Handle<Object> context) {
+    void FunctionUpdateEvent::Dispatch(Handle<Object> context) {
         int argc = 3;
-        Handle<Value> argv[3] =
-        {String::NewSymbol("functionUpdate"), Integer::New(fundescr), String::New(data.c_str())};
-        dispatchToV8(context, argc, argv);
+        Handle<Value> argv[3] = {String::NewSymbol("functionUpdate"), Integer::New(fundescr), String::New(data.c_str())};
+        DispatchToV8(context, argc, argv);
     }
 
-    void DeviceEvent::dispatch(Handle<Object> context) {
+    void DeviceEvent::Dispatch(Handle<Object> context) {
         int argc = 2;
         Handle<Value> argv[2] = {String::NewSymbol(name), Integer::New(device)};
-        dispatchToV8(context, argc, argv);
+        DispatchToV8(context, argc, argv);
     }
 
 }  // namespace node_yoctopuce
