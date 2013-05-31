@@ -34,13 +34,16 @@ yoctopuce = require('../');
 util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
 
 deviceName = process.argv[2];
-yoctopuce.request(deviceName, "GET /api.json \r\n\r\n", function (response) {
-  // Dirty parsing, response begins with OK\r\n\r\n, so drop it and parse it as JSON.
+
+var options = { device:deviceName, path:"GET /api.json \r\n\r\n"};
+var request = yoctopuce.request(options, function (response) {
+  // You can handle the response here or in the data event of the request.
+}).on("error",function (err) {
+  util.log("Error: " + err);
+}).on("data", function (response) {
   json = response.substring(6);
   data = JSON.parse(json);
   util.log("Response:\n" + util.inspect(data, { showHidden:true, depth:null }));
-}).on("error", function (err) {
-  util.log("Error: " + err);
 });
 
 

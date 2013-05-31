@@ -48,33 +48,29 @@ namespace node_yoctopuce {
     Handle<Value> Yoctopuce::HttpRequestAsync(const Arguments& args) {
         HandleScope scope;
 
-        if (args.Length() < 1 || !args[0]->IsString()) {
-            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
+        if (args.Length() < 1 || !args[0]->IsObject()) {
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be an object"))));
         }
-        String::Utf8Value device_arg(args[0]->ToString());
+        Handle<Object> request_arg = Handle<Object>::Cast(args[0]);
 
-        if (args.Length() < 2 || !args[1]->IsString()) {
-            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 2 must be a string"))));
-        }
-        String::Utf8Value path_arg(args[1]->ToString());
-
-        if (args.Length() < 3 || !args[2]->IsFunction()) {
+        if (args.Length() < 2 || !args[1]->IsFunction()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 3 must be a function"))));
         }
-        Local<Value> callback_arg = args[2];
+        Handle<Function> callback_arg = Handle<Function>::Cast(args[1]);
 
-        if (args.Length() < 4 || !args[3]->IsObject()) {
-            return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 3 must be an object"))));
+        Local<Value> device_arg = request_arg->Get(String::NewSymbol("device"));
+        Local<Value> path_arg = request_arg->Get(String::NewSymbol("path"));
+        if(!(device_arg->IsString() && path_arg->IsString())) {
+            return scope.Close(ThrowException(Exception::TypeError(String::New("Invalid request"))));
         }
-        Local<Value> request_arg = args[3];
 
         uv_work_t* work = new uv_work_t();
         HttpRequestBaton *baton = new HttpRequestBaton();
         baton->work = work;
-        baton->device = string(*device_arg);
-        baton->path = string(*path_arg);
-        baton->callback = Persistent<Function>::New(Handle<Function>::Cast(callback_arg));
-        baton->request = Persistent<Object>::New(Handle<Object>::Cast(request_arg));
+        baton->device = string(*String::Utf8Value(device_arg));
+        baton->path = string(*String::Utf8Value(path_arg));
+        baton->callback = Persistent<Function>::New(callback_arg);
+        baton->request = Persistent<Object>::New(request_arg);
         work->data = baton;
 
         uv_queue_work(uv_default_loop(), work, OnHttpRequest, (uv_after_work_cb)OnAfterHttpRequest);
@@ -105,29 +101,30 @@ namespace node_yoctopuce {
         HandleScope scope;
         HttpRequestBaton* baton = static_cast<HttpRequestBaton*>(req->data);
         if (YISERR(baton->result)) {
-            EmitError(baton->request, baton->error);
+            EmitEvent(baton->request, String::NewSymbol("error"), String::New(baton->error.c_str()));
         } else {
-            Handle<Value> argv[1];
-            argv[0] = String::New(baton->response.c_str());
+            Local<String> response = String::New(baton->response.c_str());
+            Handle<Value> argv[1] = {response};
             TryCatch try_catch;
             Function::Cast(*baton->callback)->Call(target_handle , 1, argv);
             if (try_catch.HasCaught()) {
                 FatalException(try_catch);
             }
+            EmitEvent(baton->request, String::NewSymbol("data"), response);
         }
         baton->callback.Dispose();
         baton->request.Dispose();
         delete baton;
     }
 
-    void Yoctopuce::EmitError(Handle<Object> context, string error) {
+    void Yoctopuce::EmitEvent(v8::Handle<v8::Object> context, v8::Handle<v8::String> event_name, v8::Handle<v8::Value> data) {
         HandleScope scope;
         Local<Value> ev = context->Get(String::NewSymbol("emit"));
         // If the emit function has been bound call it; otherwise
         // drop the events.
         if (!ev.IsEmpty() && ev->IsFunction()) {
             Local<Function> emitter = Local<Function>::Cast(ev);
-            Handle<Value> argv[2] = {String::NewSymbol("error"), String::New(error.c_str())};
+            Handle<Value> argv[2] = {event_name, data};
             TryCatch try_catch;
             emitter->Call(context, 2, argv);
             if (try_catch.HasCaught()) {

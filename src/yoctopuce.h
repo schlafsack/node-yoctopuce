@@ -83,7 +83,7 @@ namespace node_yoctopuce {
         static void OnAfterHttpRequest(uv_work_t* req);
 
         // Utils
-        static void EmitError(v8::Handle<v8::Object> context, std::string error);
+        static void EmitEvent(v8::Handle<v8::Object> context, v8::Handle<v8::String> event_name, v8::Handle<v8::Value> data);
 
         //  Events
         static void FwdLogEvent(const char* log, u32 loglen);
