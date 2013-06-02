@@ -22,29 +22,26 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
+var yoctopuce = require('../');
 var util = require('util');
-var yoctopuce, deviceName, json, data;
 
 if (process.argv.length < 3) {
   util.log("Use: node httpRequest.js devicename");
   process.exit();
 }
 
-yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
-
-deviceName = process.argv[2];
-
-var options = { device:deviceName, path:"GET /api.json \r\n\r\n"};
-var request = yoctopuce.request(options, function (response) {
-  // You can handle the response here or in the data event of the request.
-}).on("error",function (err) {
+var options = { device: process.argv[2], path: "GET /api.json \r\n\r\n"};
+yoctopuce.request(options, function (response) {
+  // You can handle the response in the callback or in the data event of the request.
+  util.log("Raw:\n" + response);
+}).on("error", function (err) {
   util.log("Error: " + err);
-}).on("data", function (response) {
-  json = response.substring(6);
-  data = JSON.parse(json);
-  util.log("Response:\n" + util.inspect(data, { showHidden:true, depth:null }));
+}).on("data", function (data) {
+  var json, response;
+  json = data.substring(6);
+  response = JSON.parse(json);
+  util.log("Response:\n" + util.inspect(response, { showHidden: true, depth: null }));
 });
-
 
 

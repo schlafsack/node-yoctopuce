@@ -22,21 +22,21 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
 var util = require('util');
-var yoctopuce, functionId, functionInfo;
+var yoctopuce = require('../');
+var functionId, functionInfo;
 
 if (process.argv.length < 3) {
   util.log("Use: node getFunctionInfo.js functionId");
   process.exit();
 }
 
-yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
-
 functionId = parseInt(process.argv[2], 0);
+
 try {
   functionInfo = yoctopuce.getFunctionInfo(functionId);
-  util.log("Function Info:\n" + util.inspect(functionInfo, { showHidden : true, depth : null }));
+  util.log("Function Info:\n" + util.inspect(functionInfo, { showHidden: true, depth: null }));
 } catch (ex) {
   util.log(ex);
   util.log(util.format("Error getting info for function %d.", functionId));

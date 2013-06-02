@@ -22,18 +22,18 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
+var yoctopuce = require('../');
 var util = require('util');
-var yoctopuce, deviceId, devicePath;
+var deviceId, devicePath;
 
 if (process.argv.length < 3) {
   util.log("Use: node getDevicePath.js deviceId");
   process.exit();
 }
 
-yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
-
 deviceId = parseInt(process.argv[2], 0);
+
 try {
   devicePath = yoctopuce.getDevicePath(deviceId);
   util.log("Device Path:\n" + util.inspect(devicePath, { showHidden : true, depth : null }));

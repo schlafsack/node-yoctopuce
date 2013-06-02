@@ -22,14 +22,14 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
 var util = require('util');
 var yoctopuce = require('../');
-var devices, i;
 
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
+var devices = yoctopuce.getAllDevices();
 
-devices = yoctopuce.getAllDevices();
 if (Array.isArray(devices)) {
+  var i;
   util.log(util.format("%d devices found:", devices.length));
   for (i = 0; i < devices.length; i++) {
     util.log(util.format("Device found with id %d.", devices[i]));

@@ -22,11 +22,8 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
 var yoctopuce = require('../');
 var util = require('util');
-var apiVersion;
-
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
-
-apiVersion = yoctopuce.getApiVersion();
+var apiVersion = yoctopuce.getApiVersion();
 util.log("API Version:\n" + util.inspect(apiVersion, { showHidden : true, depth : null }));

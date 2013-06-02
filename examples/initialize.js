@@ -21,8 +21,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+"use strict";
 
 var yoctopuce = require('../');
 var util = require('util');
 
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
+util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden: true, depth: null }));

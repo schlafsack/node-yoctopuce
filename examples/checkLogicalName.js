@@ -22,19 +22,19 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
 var util = require('util');
-var yoctopuce, logicalName, valid;
+var yoctopuce = require('../');
+var logicalName, valid;
 
 if (process.argv.length < 3) {
   util.log("Use: node checkLogicalName.js logicalName");
   process.exit();
 }
 
-yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
-
 logicalName = process.argv[2];
 valid = yoctopuce.checkLogicalName(logicalName);
+
 if (valid) {
   util.log(util.format("Logical name %s is valid", logicalName));
 } else {

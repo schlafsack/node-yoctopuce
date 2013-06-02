@@ -22,16 +22,15 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
 var util = require('util');
-var yoctopuce, deviceId, functionId, functions, i;
+var yoctopuce = require('../');
+var deviceId, functionId, functions;
 
 if (process.argv.length < 3) {
   util.log("Use: node getFunctionsByDevice.js deviceId <functionId>");
   process.exit();
 }
-
-yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
 deviceId = parseInt(process.argv[2], 0);
 functionId = parseInt(process.argv[3], 0);
@@ -44,6 +43,7 @@ if (functionId) {
 
 if (Array.isArray(functions)) {
   util.log(util.format("%d functions found:", functions.length));
+  var i;
   for (i = 0; i < functions.length; i++) {
     util.log(util.format("Function found with id %d.", functions[i]));
   }

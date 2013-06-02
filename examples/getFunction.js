@@ -22,19 +22,19 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
+var yoctopuce = require('../');
 var util = require('util');
-var yoctopuce, functionClass, functionName, fnct;
+var functionClass, functionName, fnct;
 
 if (process.argv.length < 4) {
   util.log("Use: node getFunction.js functionclass function");
   process.exit();
 }
 
-yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
-
 functionClass = process.argv[2];
 functionName = process.argv[3];
+
 try {
   fnct = yoctopuce.getFunction(functionClass, functionName);
   util.log(util.format("Function %s:%s found with id %d.", functionClass, functionName, fnct));

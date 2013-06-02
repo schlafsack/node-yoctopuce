@@ -22,16 +22,15 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
+var yoctopuce = require('../');
 var util = require('util');
-var yoctopuce, functionClass, functionId, functions, i;
+var functionClass, functionId, functions;
 
 if (process.argv.length < 3) {
   util.log("Use: node getFunctionsByClass.js functionclass <functionId>");
   process.exit();
 }
-
-yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
 
 functionClass = process.argv[2];
 functionId = parseInt(process.argv[3], 0);
@@ -43,6 +42,7 @@ if (functionId) {
 }
 
 if (Array.isArray(functions)) {
+  var i;
   util.log(util.format("%d functions found:", functions.length));
   for (i = 0; i < functions.length; i++) {
     util.log(util.format("Function found with id %d.", functions[i]));

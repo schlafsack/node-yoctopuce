@@ -22,21 +22,21 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
+var yoctopuce = require('../');
 var util = require('util');
-var yoctopuce, deviceId, deviceInfo;
+var deviceId, deviceInfo;
 
 if (process.argv.length < 3) {
   util.log("Use: node getDeviceInfo.js deviceId");
   process.exit();
 }
 
-yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
-
 deviceId = parseInt(process.argv[2], 0);
+
 try {
   deviceInfo = yoctopuce.getDeviceInfo(deviceId);
-  util.log("Device Info:\n" + util.inspect(deviceInfo, { showHidden : true, depth : null }));
+  util.log("Device Info:\n" + util.inspect(deviceInfo, { showHidden: true, depth: null }));
 } catch (ex) {
   util.log(ex);
   util.log(util.format("Error getting info for device %d.", deviceId));

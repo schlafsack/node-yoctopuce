@@ -22,25 +22,22 @@
  * IN THE SOFTWARE.
  */
 
+"use strict";
 var util = require('util');
-var yoctopuce, deviceName, response, json, data;
+var yoctopuce = require('../');
+var deviceName;
 
 if (process.argv.length < 3) {
   util.log("Use: node httpRequest.js devicename");
   process.exit();
 }
 
-yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
-
 deviceName = process.argv[2];
 try {
+  var response, json, data;
   response = yoctopuce.httpRequest(deviceName, "GET /api.json \r\n\r\n");
-
-  // Dirty parsing, response begins with OK\r\n\r\n, so drop it and parse it as JSON.
   json = response.substring(6);
   data = JSON.parse(json);
-
   util.log("Response:\n" + util.inspect(data, { showHidden : true, depth : null }));
 } catch (ex) {
   util.log(ex);
