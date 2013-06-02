@@ -22,7 +22,9 @@
  * IN THE SOFTWARE.
  */
 
+/*jshint globalstrict: true*/
 "use strict";
+
 var yoctopuce = require('../');
 var util = require('util');
 var functionClass, functionName, fnct;

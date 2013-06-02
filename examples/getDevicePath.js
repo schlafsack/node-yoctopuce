@@ -22,7 +22,9 @@
  * IN THE SOFTWARE.
  */
 
+/*jshint globalstrict: true*/
 "use strict";
+
 var yoctopuce = require('../');
 var util = require('util');
 var deviceId, devicePath;
@@ -36,7 +38,7 @@ deviceId = parseInt(process.argv[2], 0);
 
 try {
   devicePath = yoctopuce.getDevicePath(deviceId);
-  util.log("Device Path:\n" + util.inspect(devicePath, { showHidden : true, depth : null }));
+  util.log(util.format("Device Path:\n%s", util.inspect(devicePath, { showHidden : true, depth : null })));
 } catch (ex) {
   util.log(ex);
   util.log(util.format("Error getting path for device %d.", deviceId));

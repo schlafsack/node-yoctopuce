@@ -22,9 +22,11 @@
  * IN THE SOFTWARE.
  */
 
+/*jshint globalstrict: true*/
 "use strict";
-var util = require('util');
+
 var yoctopuce = require('../');
+var util = require('util');
 var deviceId, functionId, functions;
 
 if (process.argv.length < 3) {

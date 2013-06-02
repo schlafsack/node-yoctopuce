@@ -22,9 +22,11 @@
  * IN THE SOFTWARE.
  */
 
+/*jshint globalstrict: true*/
 "use strict";
-var util = require('util');
+
 var yoctopuce = require('../');
+var util = require('util');
 var deviceName;
 
 if (process.argv.length < 3) {
@@ -38,7 +40,7 @@ try {
   response = yoctopuce.httpRequest(deviceName, "GET /api.json \r\n\r\n");
   json = response.substring(6);
   data = JSON.parse(json);
-  util.log("Response:\n" + util.inspect(data, { showHidden : true, depth : null }));
+  util.log(util.format("Response:\n%s", util.inspect(data, { showHidden : true, depth : null })));
 } catch (ex) {
   util.log(ex);
   util.log(util.format("Error making http request to device %s.", deviceName));

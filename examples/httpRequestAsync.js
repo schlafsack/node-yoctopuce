@@ -22,26 +22,43 @@
  * IN THE SOFTWARE.
  */
 
+/*jshint globalstrict: true*/
 "use strict";
+
 var yoctopuce = require('../');
 var util = require('util');
+var HTTPParser = process.binding('http_parser').HTTPParser;
+
+var CRLF = '\r\n';
 
 if (process.argv.length < 3) {
   util.log("Use: node httpRequest.js devicename");
   process.exit();
 }
 
-var options = { device: process.argv[2], path: "GET /api.json \r\n\r\n"};
+function logResponse(data) {
+  var response, parser;
+  response = new Buffer(data);
+  parser = new HTTPParser(HTTPParser.RESPONSE);
+  parser.onBody = function (b, start, len) {
+    var json, body;
+    body = b.slice(start, start + len);
+    json = JSON.parse(body);
+    util.log(util.format("Response:\n%s", util.inspect(json, { showHidden: true, depth: null })));
+  };
+  parser.onHeadersComplete = function (info) {
+    util.log(util.format("Headers:\n%s", util.inspect(info, { showHidden: true, depth: null })));
+  };
+  parser.execute(response, 0, response.length);
+}
+
+var options = { device: process.argv[2], path: "GET /api.json HTTP/1.1" + CRLF + CRLF };
+
 yoctopuce.request(options, function (response) {
   // You can handle the response in the callback or in the data event of the request.
-  util.log("Raw:\n" + response);
+  util.log(util.format("Raw:\n%s", response));
 }).on("error", function (err) {
-  util.log("Error: " + err);
+  util.log(util.format("Error:\n%s", err));
 }).on("data", function (data) {
-  var json, response;
-  json = data.substring(6);
-  response = JSON.parse(json);
-  util.log("Response:\n" + util.inspect(response, { showHidden: true, depth: null }));
+  logResponse(data);
 });
-
-

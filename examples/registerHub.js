@@ -22,10 +22,12 @@
  * IN THE SOFTWARE.
  */
 
+/*jshint globalstrict: true*/
 "use strict";
-var util = require('util');
+
 var yoctopuce = require('../');
-var root, devices, deviceId, i;
+var util = require('util');
+var root, devices, deviceId;
 
 if (process.argv.length < 3) {
   util.log("Use: node registerHub.js hubRoot");
@@ -33,7 +35,7 @@ if (process.argv.length < 3) {
 }
 
 function displayDevices() {
-  var deviceInfo, devices = yoctopuce.getAllDevices();
+  var deviceInfo, i, devices = yoctopuce.getAllDevices();
   if (Array.isArray(devices)) {
     util.log(util.format("%d devices found:", devices.length));
     for (i = 0; i < devices.length; i++) {
@@ -41,7 +43,7 @@ function displayDevices() {
       util.log(util.format("Device found with id %d.", devices[i]));
       try {
         deviceInfo = yoctopuce.getDeviceInfo(deviceId);
-        util.log("Device Info:\n" + util.inspect(deviceInfo, { showHidden: true, depth: null }));
+        util.log(util.format("Device Info:\n%s", util.inspect(deviceInfo, { showHidden: true, depth: null })));
       } catch (ex) {
         util.log(ex);
         util.log(util.format("Error getting info for device %d.", deviceId));
