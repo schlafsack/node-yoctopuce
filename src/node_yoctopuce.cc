@@ -25,15 +25,13 @@
 
 #include "./yoctopuce.h"
 
-using v8::Handle;
-
 namespace node_yoctopuce {
 
     static void unInit(void) {
         Yoctopuce::Close();
     }
 
-    static void init(Handle<Object> target) {
+    static void init(v8::Handle<v8::Object> target) {
         atexit(unInit);
         Yoctopuce::Initialize(target);
     }

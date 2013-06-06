@@ -22,14 +22,16 @@
  * IN THE SOFTWARE.
  */
 
-var util = require('util');
+/*jshint globalstrict: true*/
+"use strict";
+
 var yoctopuce = require('../');
-var devices, i;
+var util = require('util');
 
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
+var devices = yoctopuce.getAllDevices();
 
-devices = yoctopuce.getAllDevices();
 if (Array.isArray(devices)) {
+  var i;
   util.log(util.format("%d devices found:", devices.length));
   for (i = 0; i < devices.length; i++) {
     util.log(util.format("Device found with id %d.", devices[i]));

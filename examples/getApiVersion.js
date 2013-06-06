@@ -22,11 +22,11 @@
  * IN THE SOFTWARE.
  */
 
+/*jshint globalstrict: true*/
+"use strict";
+
 var yoctopuce = require('../');
 var util = require('util');
-var apiVersion;
 
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
-
-apiVersion = yoctopuce.getApiVersion();
-util.log("API Version:\n" + util.inspect(apiVersion, { showHidden : true, depth : null }));
+var apiVersion = yoctopuce.getApiVersion();
+util.log(util.format("API Version:\n%s", util.inspect(apiVersion, { showHidden: true, depth: null })));

@@ -60,8 +60,9 @@
         "src/node_yoctopuce.cc",
         "src/yoctopuce.h",
         "src/yoctopuce.cc",
+        "src/yoctopuce_async.cc",
         "src/events.h",
-		"src/events.cc"
+        "src/events.cc"
       ],
       "dependencies":[
         "yapi"

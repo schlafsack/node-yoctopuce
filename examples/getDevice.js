@@ -22,18 +22,20 @@
  * IN THE SOFTWARE.
  */
 
+/*jshint globalstrict: true*/
+"use strict";
+
+var yoctopuce = require('../');
 var util = require('util');
-var yoctopuce, device;
+var device, deviceName;
 
 if (process.argv.length < 3) {
   util.log("Use: node getDevice.js devicename");
   process.exit();
 }
 
-yoctopuce = require('../');
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
+deviceName = process.argv[2];
 
-var deviceName = process.argv[2];
 try {
   device = yoctopuce.getDevice(deviceName);
   util.log(util.format("Device %s found with id %d.", deviceName, device));

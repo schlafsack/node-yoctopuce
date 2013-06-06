@@ -1,4 +1,4 @@
-﻿
+﻿﻿
 // -*- C++ -*-
 //
 // Copyright (c) 2013, Tom Greasley <tom@greasley.com>
@@ -33,6 +33,10 @@ using v8::Number;
 using v8::Array;
 using v8::Boolean;
 using v8::Local;
+using v8::Object;
+using v8::Handle;
+using v8::Arguments;
+using v8::Value;
 using v8::Undefined;
 using v8::ThrowException;
 
@@ -41,47 +45,43 @@ using std::swap;
 
 namespace node_yoctopuce {
 
-#define THROW(msg, err, ex) \
-    Local<String> m1 = String::NewSymbol(msg); \
-    Local<String> m2 = String::Concat(m1, String::New(err)); \
-    Handle<Value> ex = ThrowException(Exception::Error(m2));
-
-    Persistent<Object> Yoctopuce::g_target_handle;
-    queue<Event*> Yoctopuce::g_event_queue;
-    uv_mutex_t Yoctopuce::g_event_queue_mutex;
-    uv_async_t Yoctopuce::g_event_async;
-    uv_mutex_t Yoctopuce::g_http_request_mutex;
+    Persistent<Object> Yoctopuce::target_handle;
+    queue<Event*> Yoctopuce::event_queue;
+    uv_mutex_t Yoctopuce::event_queue_mutex;
+    uv_async_t Yoctopuce::event_async;
+    uv_mutex_t Yoctopuce::http_request_mutex;
 
     void Yoctopuce::Initialize(Handle<Object> target) {
         HandleScope scope;
 
-        g_target_handle = Persistent<Object>::New(target);
+        target_handle = Persistent<Object>::New(target);
 
         // Expose API methods
-        NODE_SET_METHOD(g_target_handle, "updateDeviceList", UpdateDeviceList);
-        NODE_SET_METHOD(g_target_handle, "handleEvents", HandleEvents);
-        NODE_SET_METHOD(g_target_handle, "registerHub", RegisterHub);
-        NODE_SET_METHOD(g_target_handle, "preregisterHub", PreregisterHub);
-        NODE_SET_METHOD(g_target_handle, "unregisterHub", UnregisterHub);
-        NODE_SET_METHOD(g_target_handle, "checkLogicalName", CheckLogicalName);
-        NODE_SET_METHOD(g_target_handle, "getApiVersion", GetApiVersion);
-        NODE_SET_METHOD(g_target_handle, "getDevice", GetDevice);
-        NODE_SET_METHOD(g_target_handle, "getAllDevices", GetAllDevices);
-        NODE_SET_METHOD(g_target_handle, "getDeviceInfo", GetDeviceInfo);
-        NODE_SET_METHOD(g_target_handle, "getDevicePath", GetDevicePath);
-        NODE_SET_METHOD(g_target_handle, "getFunction", GetFunction);
-        NODE_SET_METHOD(g_target_handle, "getFunctionsByClass", GetFunctionsByClass);
-        NODE_SET_METHOD(g_target_handle, "getFunctionsByDevice", GetFunctionsByDevice);
-        NODE_SET_METHOD(g_target_handle, "getFunctionInfo", GetFunctionInfo);
-        NODE_SET_METHOD(g_target_handle, "httpRequest", HttpRequest);
+        NODE_SET_METHOD(target_handle, "updateDeviceList", UpdateDeviceList);
+        NODE_SET_METHOD(target_handle, "handleEvents", HandleEvents);
+        NODE_SET_METHOD(target_handle, "registerHub", RegisterHub);
+        NODE_SET_METHOD(target_handle, "preregisterHub", PreregisterHub);
+        NODE_SET_METHOD(target_handle, "unregisterHub", UnregisterHub);
+        NODE_SET_METHOD(target_handle, "checkLogicalName", CheckLogicalName);
+        NODE_SET_METHOD(target_handle, "getApiVersion", GetApiVersion);
+        NODE_SET_METHOD(target_handle, "getDevice", GetDevice);
+        NODE_SET_METHOD(target_handle, "getAllDevices", GetAllDevices);
+        NODE_SET_METHOD(target_handle, "getDeviceInfo", GetDeviceInfo);
+        NODE_SET_METHOD(target_handle, "getDevicePath", GetDevicePath);
+        NODE_SET_METHOD(target_handle, "getFunction", GetFunction);
+        NODE_SET_METHOD(target_handle, "getFunctionsByClass", GetFunctionsByClass);
+        NODE_SET_METHOD(target_handle, "getFunctionsByDevice", GetFunctionsByDevice);
+        NODE_SET_METHOD(target_handle, "getFunctionInfo", GetFunctionInfo);
+        NODE_SET_METHOD(target_handle, "httpRequest", HttpRequest);
+        NODE_SET_METHOD(target_handle, "httpRequestAsync", HttpRequestAsync);
 
         // Set up the event queue
-        uv_mutex_init(&g_event_queue_mutex);
-        uv_async_init(uv_default_loop(), &g_event_async, onEvent);
-        uv_unref(reinterpret_cast<uv_handle_t*>(&g_event_async));
+        uv_mutex_init(&event_queue_mutex);
+        uv_async_init(uv_default_loop(), &event_async, OnEvent);
+        uv_unref(reinterpret_cast<uv_handle_t*>(&event_async));
 
         // Set up for http requests
-        uv_mutex_init(&g_http_request_mutex);
+        uv_mutex_init(&http_request_mutex);
 
         // Initialise YAPI.
         char errmsg[YOCTO_ERRMSG_LEN];
@@ -93,12 +93,12 @@ namespace node_yoctopuce {
         }
 
         // Set up to handle device events
-        yapiRegisterLogFunction(fwdLogEvent);
-        yapiRegisterDeviceLogCallback(fwdDeviceLogEvent);
-        yapiRegisterDeviceArrivalCallback(fwdDeviceArrivalEvent);
-        yapiRegisterDeviceRemovalCallback(fwdDeviceRemovalEvent);
-        yapiRegisterDeviceChangeCallback(fwdDeviceChangeEvent);
-        yapiRegisterFunctionUpdateCallback(fwdFunctionUpdateEvent);
+        yapiRegisterLogFunction(FwdLogEvent);
+        yapiRegisterDeviceLogCallback(FwdDeviceLogEvent);
+        yapiRegisterDeviceArrivalCallback(FwdDeviceArrivalEvent);
+        yapiRegisterDeviceRemovalCallback(FwdDeviceRemovalEvent);
+        yapiRegisterDeviceChangeCallback(FwdDeviceChangeEvent);
+        yapiRegisterFunctionUpdateCallback(FwdFunctionUpdateEvent);
     }
 
     void Yoctopuce::Close() {
@@ -111,10 +111,10 @@ namespace node_yoctopuce {
         yapiRegisterFunctionUpdateCallback(NULL);
 
         // Clean up
-        uv_close(reinterpret_cast<uv_handle_t*>(&g_event_async), NULL);
-        uv_mutex_destroy(&g_event_queue_mutex);
-        uv_mutex_destroy(&g_http_request_mutex);
-        g_target_handle.Clear();
+        uv_close(reinterpret_cast<uv_handle_t*>(&event_async), NULL);
+        uv_mutex_destroy(&event_queue_mutex);
+        uv_mutex_destroy(&http_request_mutex);
+        target_handle.Clear();
 
         // Free the API.
         yapiFreeAPI();
@@ -146,12 +146,12 @@ namespace node_yoctopuce {
         if (args.Length() != 1 || !args[0]->IsString()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
         }
-        String::Utf8Value arg(args[0]->ToString());
+        String::Utf8Value hub_arg(args[0]->ToString());
 
-        const char *c_arg = *arg;
+        const char *hub = *hub_arg;
 
         char errmsg[YOCTO_ERRMSG_LEN];
-        if (YISERR(yapiRegisterHub(c_arg, errmsg))) {
+        if (YISERR(yapiRegisterHub(hub, errmsg))) {
             THROW("RegisterHub failed: ", errmsg, ex);
             return scope.Close(ex);
         }
@@ -165,12 +165,12 @@ namespace node_yoctopuce {
         if (args.Length() != 1 || !args[0]->IsString()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
         }
-        String::Utf8Value arg(args[0]->ToString());
+        String::Utf8Value hub_arg(args[0]->ToString());
 
-        const char *c_arg = *arg;
+        const char *hub = *hub_arg;
 
         char errmsg[YOCTO_ERRMSG_LEN];
-        if (YISERR(yapiPreregisterHub(c_arg, errmsg))) {
+        if (YISERR(yapiPreregisterHub(hub, errmsg))) {
             THROW("PreregisterHub failed: ", errmsg, ex);
             return scope.Close(ex);
         }
@@ -183,10 +183,10 @@ namespace node_yoctopuce {
         if (args.Length() != 1 || !args[0]->IsString()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
         }
-        String::Utf8Value arg(args[0]->ToString());
+        String::Utf8Value hub_arg(args[0]->ToString());
 
-        const char *c_arg = *arg;
-        yapiUnregisterHub(c_arg);
+        const char *hub = *hub_arg;
+        yapiUnregisterHub(hub);
 
         return scope.Close(Undefined());
     }
@@ -197,10 +197,10 @@ namespace node_yoctopuce {
         if (args.Length() != 1 || !args[0]->IsString()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
         }
-        String::Utf8Value arg(args[0]->ToString());
+        String::Utf8Value name_arg(args[0]->ToString());
 
-        const char* c_arg = *arg;
-        bool ret = !!yapiCheckLogicalName(c_arg);
+        const char* name= *name_arg;
+        bool ret = !!yapiCheckLogicalName(name);
 
         return scope.Close(Boolean::New(ret));
     }
@@ -225,18 +225,18 @@ namespace node_yoctopuce {
         if (args.Length() != 1 || !args[0]->IsString()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
         }
-        String::Utf8Value arg(args[0]->ToString());
+        String::Utf8Value device_arg(args[0]->ToString());
 
         char errmsg[YOCTO_ERRMSG_LEN];
-        const char* c_arg = *arg;
-        YAPI_DEVICE device;
+        const char* device = *device_arg;
+        YAPI_DEVICE device_handle;
 
-        if (YISERR(device = yapiGetDevice(c_arg, errmsg))) {
+        if (YISERR(device_handle = yapiGetDevice(device, errmsg))) {
             THROW("GetDevice failed: ", errmsg, ex);
             return scope.Close(ex);
         }
 
-        Local<Number> result = Number::New(device);
+        Local<Number> result = Number::New(device_handle);
         return scope.Close(result);
     }
 
@@ -353,24 +353,24 @@ namespace node_yoctopuce {
         if (args.Length() < 1 || !args[0]->IsString()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
         }
-        String::Utf8Value class_arg(args[0]->ToString());
+        String::Utf8Value function_class_arg(args[0]->ToString());
 
         if (args.Length() != 2 || !args[1]->IsString()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 2 must be a string"))));
         }
-        String::Utf8Value fnct_arg(args[1]->ToString());
+        String::Utf8Value function_arg(args[1]->ToString());
 
         char errmsg[YOCTO_ERRMSG_LEN];
-        const char* c_class_arg = *class_arg;
-        const char* c_fnct_arg = *fnct_arg;
-        YAPI_FUNCTION function;
+        const char* function_class = *function_class_arg;
+        const char* function = *function_arg;
+        YAPI_FUNCTION function_handle;
 
-        if (YISERR(function = yapiGetFunction(c_class_arg, c_fnct_arg, errmsg))) {
+        if (YISERR(function_handle = yapiGetFunction(function_class, function, errmsg))) {
             THROW("GetDevice failed: ", errmsg, ex);
             return scope.Close(ex);
         }
 
-        Local<Number> result = Number::New(function);
+        Local<Number> result = Number::New(function_handle);
         return scope.Close(result);
     }
 
@@ -382,7 +382,7 @@ namespace node_yoctopuce {
         if (args.Length() < 1 || !args[0]->IsString()) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 1 must be a string"))));
         }
-        String::Utf8Value class_arg(args[0]->ToString());
+        String::Utf8Value function_class_arg(args[0]->ToString());
 
         if (args.Length() == 2 && args[1]->IsInt32()) {
             prev_function = args[1]->Int32Value();
@@ -390,7 +390,7 @@ namespace node_yoctopuce {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Argument 2 must be a number"))));
         }
 
-        const char* c_class_arg = *class_arg;
+        const char* function_class= *function_class_arg;
 
         // TODO(tjg) the yoctopuce wrapper for this method accepts a maxsize
         // arg for paging through the data, however it's not used.
@@ -403,7 +403,7 @@ namespace node_yoctopuce {
         YAPI_FUNCTION *functions = new YAPI_FUNCTION[elements];
         int ret, required_size;
 
-        if (YISERR(ret = yapiGetFunctionsByClass(c_class_arg, prev_function,
+        if (YISERR(ret = yapiGetFunctionsByClass(function_class, prev_function,
             functions, init_size, &required_size, errmsg))) {
                 delete[] functions;
                 THROW("GetFunctionsByClass failed: ", errmsg, ex);
@@ -414,7 +414,7 @@ namespace node_yoctopuce {
             elements = required_size / sizeof(YAPI_FUNCTION);
             init_size = elements * sizeof(YAPI_FUNCTION);
             functions = new YAPI_FUNCTION[elements];
-            if (YISERR(ret = yapiGetFunctionsByClass(c_class_arg, prev_function,
+            if (YISERR(ret = yapiGetFunctionsByClass(function_class, prev_function,
                 functions, init_size, NULL, errmsg))) {
                     delete[] functions;
                     THROW("GetFunctionsByClass failed: ", errmsg, ex);
@@ -534,82 +534,82 @@ namespace node_yoctopuce {
         String::Utf8Value request_arg(args[1]->ToString());
 
         char errmsg[YOCTO_ERRMSG_LEN];
-        const char *c_device = *device_arg;
-        const char *c_request = *request_arg;
+        const char *device = *device_arg;
+        const char *request = *request_arg;
         int request_size = request_arg.length();
-        char *c_reply;
+        char *reply;
         int reply_size;
         YIOHDL request_handle;
 
-        uv_mutex_lock(&g_http_request_mutex);
-        if (YISERR(yapiHTTPRequestSyncStartEx(&request_handle, c_device,
-            c_request, request_size, &c_reply, &reply_size, errmsg))) {
+        uv_mutex_lock(&http_request_mutex);
+        if (YISERR(yapiHTTPRequestSyncStartEx(&request_handle, device,
+            request, request_size, &reply, &reply_size, errmsg))) {
                 THROW("HttpRequest failed: ", errmsg, ex);
-                uv_mutex_unlock(&g_http_request_mutex);
+                uv_mutex_unlock(&http_request_mutex);
                 return scope.Close(ex);
         }
-        Local<String> reply = String::New(c_reply, reply_size);
+        Local<String> reply_arg = String::New(reply, reply_size);
         if (YISERR(yapiHTTPRequestSyncDone(&request_handle, errmsg))) {
             THROW("HttpRequest failed: ", errmsg, ex);
-            uv_mutex_unlock(&g_http_request_mutex);
+            uv_mutex_unlock(&http_request_mutex);
             return scope.Close(ex);
         }
-        uv_mutex_unlock(&g_http_request_mutex);
+        uv_mutex_unlock(&http_request_mutex);
 
-        return scope.Close(reply);
+        return scope.Close(reply_arg);
     }
 
-    void Yoctopuce::fwdLogEvent(const char* log, u32 loglen) {
-        fwdEvent(new LogEvent(log));
+    void Yoctopuce::FwdLogEvent(const char* log, u32 loglen) {
+        FwdEvent(new LogEvent(log));
     }
 
-    void Yoctopuce::fwdDeviceLogEvent(YAPI_DEVICE device) {
-        fwdEvent(new DeviceLogEvent(device));
+    void Yoctopuce::FwdDeviceLogEvent(YAPI_DEVICE device) {
+        FwdEvent(new DeviceLogEvent(device));
     }
 
-    void Yoctopuce::fwdDeviceArrivalEvent(YAPI_DEVICE device) {
-        fwdEvent(new DeviceArrivalEvent(device));
+    void Yoctopuce::FwdDeviceArrivalEvent(YAPI_DEVICE device) {
+        FwdEvent(new DeviceArrivalEvent(device));
     }
 
-    void Yoctopuce::fwdDeviceRemovalEvent(YAPI_DEVICE device) {
-        fwdEvent(new DeviceRemovalEvent(device));
+    void Yoctopuce::FwdDeviceRemovalEvent(YAPI_DEVICE device) {
+        FwdEvent(new DeviceRemovalEvent(device));
     }
 
-    void Yoctopuce::fwdDeviceChangeEvent(YAPI_DEVICE device) {
-        fwdEvent(new DeviceChangeEvent(device));
+    void Yoctopuce::FwdDeviceChangeEvent(YAPI_DEVICE device) {
+        FwdEvent(new DeviceChangeEvent(device));
     }
 
-    void Yoctopuce::fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *value) {
-        fwdEvent(new FunctionUpdateEvent(fundescr, value));
+    void Yoctopuce::FwdFunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *value) {
+        FwdEvent(new FunctionUpdateEvent(fundescr, value));
     }
 
-    void Yoctopuce::fwdEvent(Event* event) {
+    void Yoctopuce::FwdEvent(Event* event) {
         // Push the event to the queue
-        uv_mutex_lock(&g_event_queue_mutex);
-        g_event_queue.push(event);
-        uv_mutex_unlock(&g_event_queue_mutex);
+        uv_mutex_lock(&event_queue_mutex);
+        event_queue.push(event);
+        uv_mutex_unlock(&event_queue_mutex);
 
         // Hold the event loop open while this is executing
-        uv_ref(reinterpret_cast<uv_handle_t*>(&g_event_async));
+        uv_ref(reinterpret_cast<uv_handle_t*>(&event_async));
 
         // Send a message to our main thread to wake up the loop
-        uv_async_send(&g_event_async);
+        uv_async_send(&event_async);
     }
 
-    void Yoctopuce::onEvent(uv_async_t *async, int status) {
+    void Yoctopuce::OnEvent(uv_async_t *async, int status) {
         // Snapshot the queued events.
         queue<Event*> events;
-        uv_mutex_lock(&g_event_queue_mutex);
-        swap(g_event_queue, events);
-        uv_mutex_unlock(&g_event_queue_mutex);
+        uv_mutex_lock(&event_queue_mutex);
+        swap(event_queue, events);
+        uv_mutex_unlock(&event_queue_mutex);
 
         // Dispatch & delete the events
         while (!events.empty()) {
             Event *event = events.front();
             events.pop();
-            event->dispatch(g_target_handle);
+            event->Dispatch(target_handle);
             delete event;
-            uv_unref(reinterpret_cast<uv_handle_t*>(&g_event_async));
+            uv_unref(reinterpret_cast<uv_handle_t*>(&event_async));
         }
     }
 

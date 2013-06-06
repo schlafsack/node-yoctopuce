@@ -1,4 +1,4 @@
-﻿
+﻿﻿
 // -*- C++ -*-
 //
 // Copyright (c) 2013, Tom Greasley <tom@greasley.com>
@@ -31,59 +31,76 @@
 #include <yapi.h>
 
 #include <queue>
+#include <string>
 
 #include "./events.h"
 
-using v8::Handle;
-using v8::Persistent;
-using v8::Arguments;
-
-using std::queue;
-
-using node::ObjectWrap;
-
 namespace node_yoctopuce {
 
-    class Yoctopuce : public ObjectWrap {
+#define THROW(msg, err, ex) \
+    v8::Local<v8::String> m1 = v8::String::NewSymbol(msg); \
+    v8::Local<v8::String> m2 = v8::String::Concat(m1, v8::String::New(err)); \
+    v8::Handle<v8::Value> ex = v8::ThrowException(v8::Exception::Error(m2));
+
+    struct HttpRequestBaton {
+        uv_work_t* work;
+        v8::Persistent<v8::Function> callback;
+        v8::Persistent<v8::Object> request;
+        std::string device;
+        std::string message;
+        std::string response;
+        std::string error;
+        YRETCODE result;
+    };
+
+    class Yoctopuce : public node::ObjectWrap {
     public:
-        static void Initialize(Handle<Object> target);
+        static void Initialize(v8::Handle<v8::Object> target);
         static void Close();
 
     protected:
-        //  API Calls
-        static Handle<Value> UpdateDeviceList(const Arguments& args);
-        static Handle<Value> HandleEvents(const Arguments& args);
-        static Handle<Value> RegisterHub(const Arguments& args);
-        static Handle<Value> PreregisterHub(const Arguments& args);
-        static Handle<Value> UnregisterHub(const Arguments& args);
-        static Handle<Value> CheckLogicalName(const Arguments& args);
-        static Handle<Value> GetApiVersion(const Arguments& args);
-        static Handle<Value> GetDevice(const Arguments& args);
-        static Handle<Value> GetAllDevices(const Arguments& args);
-        static Handle<Value> GetDeviceInfo(const Arguments& args);
-        static Handle<Value> GetDevicePath(const Arguments& args);
-        static Handle<Value> GetFunction(const Arguments& args);
-        static Handle<Value> GetFunctionsByClass(const Arguments& args);
-        static Handle<Value> GetFunctionsByDevice(const Arguments& args);
-        static Handle<Value> GetFunctionInfo(const Arguments& args);
-        static Handle<Value> HttpRequest(const Arguments& args);
+        //  Sync API Calls
+        static v8::Handle<v8::Value> UpdateDeviceList(const v8::Arguments& args);
+        static v8::Handle<v8::Value> HandleEvents(const v8::Arguments& args);
+        static v8::Handle<v8::Value> RegisterHub(const v8::Arguments& args);
+        static v8::Handle<v8::Value> PreregisterHub(const v8::Arguments& args);
+        static v8::Handle<v8::Value> UnregisterHub(const v8::Arguments& args);
+        static v8::Handle<v8::Value> CheckLogicalName(const v8::Arguments& args);
+        static v8::Handle<v8::Value> GetApiVersion(const v8::Arguments& args);
+        static v8::Handle<v8::Value> GetDevice(const v8::Arguments& args);
+        static v8::Handle<v8::Value> GetAllDevices(const v8::Arguments& args);
+        static v8::Handle<v8::Value> GetDeviceInfo(const v8::Arguments& args);
+        static v8::Handle<v8::Value> GetDevicePath(const v8::Arguments& args);
+        static v8::Handle<v8::Value> GetFunction(const v8::Arguments& args);
+        static v8::Handle<v8::Value> GetFunctionsByClass(const v8::Arguments& args);
+        static v8::Handle<v8::Value> GetFunctionsByDevice(const v8::Arguments& args);
+        static v8::Handle<v8::Value> GetFunctionInfo(const v8::Arguments& args);
+        static v8::Handle<v8::Value> HttpRequest(const v8::Arguments& args);
+
+        //  Async API Calls
+        static v8::Handle<v8::Value> HttpRequestAsync(const v8::Arguments& args);
+        static void OnHttpRequest(uv_work_t* req);
+        static void OnAfterHttpRequest(uv_work_t* req);
+
+        // Utils
+        static void EmitEvent(v8::Handle<v8::Object> context, v8::Handle<v8::String> event_name, v8::Handle<v8::Value> data);
 
         //  Events
-        static void fwdLogEvent(const char* log, u32 loglen);
-        static void fwdDeviceLogEvent(YAPI_DEVICE device);
-        static void fwdDeviceArrivalEvent(YAPI_DEVICE device);
-        static void fwdDeviceRemovalEvent(YAPI_DEVICE device);
-        static void fwdDeviceChangeEvent(YAPI_DEVICE device);
-        static void fwdFunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *value);
-        static void fwdEvent(Event* event);
-        static void onEvent(uv_async_t *async, int status);
+        static void FwdLogEvent(const char* log, u32 loglen);
+        static void FwdDeviceLogEvent(YAPI_DEVICE device);
+        static void FwdDeviceArrivalEvent(YAPI_DEVICE device);
+        static void FwdDeviceRemovalEvent(YAPI_DEVICE device);
+        static void FwdDeviceChangeEvent(YAPI_DEVICE device);
+        static void FwdFunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *value);
+        static void FwdEvent(Event* event);
+        static void OnEvent(uv_async_t *async, int status);
 
     private:
-        static Persistent<Object> g_target_handle;
-        static uv_mutex_t g_event_queue_mutex;
-        static queue<Event*> g_event_queue;
-        static uv_async_t g_event_async;
-        static uv_mutex_t g_http_request_mutex;
+        static v8::Persistent<v8::Object> target_handle;
+        static uv_mutex_t event_queue_mutex;
+        static std::queue<Event*> event_queue;
+        static uv_async_t event_async;
+        static uv_mutex_t http_request_mutex;
     };
 
 }  // namespace node_yoctopuce

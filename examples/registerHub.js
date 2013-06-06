@@ -22,16 +22,35 @@
  * IN THE SOFTWARE.
  */
 
-var util = require('util');
+/*jshint globalstrict: true*/
+"use strict";
+
 var yoctopuce = require('../');
-var root, devices, deviceId, i;
+var util = require('util');
+var root, devices, deviceId;
 
 if (process.argv.length < 3) {
   util.log("Use: node registerHub.js hubRoot");
   process.exit();
 }
 
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden:true, depth:null }));
+function displayDevices() {
+  var deviceInfo, i, devices = yoctopuce.getAllDevices();
+  if (Array.isArray(devices)) {
+    util.log(util.format("%d devices found:", devices.length));
+    for (i = 0; i < devices.length; i++) {
+      deviceId = devices[i];
+      util.log(util.format("Device found with id %d.", devices[i]));
+      try {
+        deviceInfo = yoctopuce.getDeviceInfo(deviceId);
+        util.log(util.format("Device Info:\n%s", util.inspect(deviceInfo, { showHidden: true, depth: null })));
+      } catch (ex) {
+        util.log(ex);
+        util.log(util.format("Error getting info for device %d.", deviceId));
+      }
+    }
+  }
+}
 
 // e.g. yoctopuce.registerHub("http://peevay:4444/");
 root = process.argv[2];
@@ -46,23 +65,3 @@ displayDevices();
 util.log(util.format("With %s unregistered:", root));
 yoctopuce.unregisterHub(root);
 displayDevices();
-
-function displayDevices() {
-  devices = yoctopuce.getAllDevices();
-  if (Array.isArray(devices)) {
-    util.log(util.format("%d devices found:", devices.length));
-    for (i = 0; i < devices.length; i++) {
-      deviceId = devices[i]
-      util.log(util.format("Device found with id %d.", devices[i]));
-      try {
-        deviceInfo = yoctopuce.getDeviceInfo(deviceId);
-        util.log("Device Info:\n" + util.inspect(deviceInfo, { showHidden:true, depth:null }));
-      }
-      catch (ex) {
-        util.log(ex);
-        util.log(util.format("Error getting info for device %d.", deviceId));
-      }
-    }
-  }
-}
-

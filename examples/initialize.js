@@ -22,7 +22,10 @@
  * IN THE SOFTWARE.
  */
 
+/*jshint globalstrict: true*/
+"use strict";
+
 var yoctopuce = require('../');
 var util = require('util');
 
-util.log("Yoctopuce Initialized:\n" + util.inspect(yoctopuce, { showHidden : true, depth : null }));
+util.log(util.format("Yoctopuce Initialized:\n%s", util.inspect(yoctopuce, { showHidden: true, depth: null })));

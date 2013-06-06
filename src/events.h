@@ -32,42 +32,37 @@
 #include <string>
 #include <algorithm>
 
-using v8::Handle;
-using v8::Object;
-using v8::Value;
-
-using std::string;
 
 namespace node_yoctopuce {
 
     class Event {
     public:
-        virtual void dispatch(Handle<Object> context)=0;
+        virtual void Dispatch(v8::Handle<v8::Object> context)=0;
         virtual ~Event() {}
     protected:
-        static void dispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]);
+        static void DispatchToV8(v8::Handle<v8::Object> context, int argc, v8::Handle<v8::Value> argv[]);
     };
 
     class CharDataEvent : public Event {
     public:
         inline explicit CharDataEvent(const char *_data) {
-            data = _data ? string(_data) : string();
+            data = _data ? std::string(_data) : std::string();
         }
     protected:
-        string data;
+        std::string data;
     };
 
     class LogEvent : public CharDataEvent {
     public:
         inline explicit LogEvent(const char *data) : CharDataEvent(data) {}
-        virtual void dispatch(Handle<Object> context);
+        virtual void Dispatch(v8::Handle<v8::Object> context);
     };
 
     class FunctionUpdateEvent : public CharDataEvent {
     public:
         inline explicit FunctionUpdateEvent(YAPI_FUNCTION fundescr, const char *data)
             : CharDataEvent(data), fundescr(fundescr) {}
-        virtual void dispatch(Handle<Object> context);
+        virtual void Dispatch(v8::Handle<v8::Object> context);
     protected:
         YAPI_FUNCTION fundescr;
     };
@@ -76,7 +71,7 @@ namespace node_yoctopuce {
     public:
         inline explicit DeviceEvent(const char* name, YAPI_DEVICE device)
             : name(name), device(device) {}
-        virtual void dispatch(Handle<Object> context);
+        virtual void Dispatch(v8::Handle<v8::Object> context);
     protected:
         const char* name;
         YAPI_DEVICE device;
