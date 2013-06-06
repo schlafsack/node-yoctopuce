@@ -59,8 +59,8 @@ namespace node_yoctopuce {
         Handle<Function> callback_arg = Handle<Function>::Cast(args[1]);
 
         Local<Value> device_arg = request_arg->Get(String::NewSymbol("device"));
-        Local<Value> path_arg = request_arg->Get(String::NewSymbol("path"));
-        if(!(device_arg->IsString() && path_arg->IsString())) {
+        Local<Value> message_arg = request_arg->Get(String::NewSymbol("message"));
+        if (!(device_arg->IsString() && message_arg->IsString())) {
             return scope.Close(ThrowException(Exception::TypeError(String::New("Invalid request"))));
         }
 
@@ -68,7 +68,7 @@ namespace node_yoctopuce {
         HttpRequestBaton *baton = new HttpRequestBaton();
         baton->work = work;
         baton->device = string(*String::Utf8Value(device_arg));
-        baton->path = string(*String::Utf8Value(path_arg));
+        baton->message = string(*String::Utf8Value(message_arg));
         baton->callback = Persistent<Function>::New(callback_arg);
         baton->request = Persistent<Object>::New(request_arg);
         work->data = baton;
@@ -80,15 +80,15 @@ namespace node_yoctopuce {
     void Yoctopuce::OnHttpRequest(uv_work_t* req) {
         HttpRequestBaton* baton = static_cast<HttpRequestBaton*>(req->data);
         const char *device = baton->device.c_str();
-        const char *path = baton->path.c_str();
-        int path_size = static_cast<int>(baton->path.size());
+        const char *message = baton->message.c_str();
+        int message_size = static_cast<int>(baton->message.size());
         char errmsg[YOCTO_ERRMSG_LEN];
         char *response;
         int response_size;
         YIOHDL request_handle;
         uv_mutex_lock(&http_request_mutex);
-        baton->result = yapiHTTPRequestSyncStartEx(&request_handle, device, path, path_size, &response, &response_size, errmsg);
-        if(YISERR(baton->result)) {
+        baton->result = yapiHTTPRequestSyncStartEx(&request_handle, device, message, message_size, &response, &response_size, errmsg);
+        if (YISERR(baton->result)) {
             baton->error = string(errmsg);
         } else {
             baton->response = string(response, response_size);

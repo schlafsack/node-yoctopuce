@@ -47,7 +47,7 @@ namespace node_yoctopuce {
         v8::Persistent<v8::Function> callback;
         v8::Persistent<v8::Object> request;
         std::string device;
-        std::string path;
+        std::string message;
         std::string response;
         std::string error;
         YRETCODE result;
