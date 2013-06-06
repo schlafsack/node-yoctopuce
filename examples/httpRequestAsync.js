@@ -52,8 +52,7 @@ function logResponse(data) {
   parser.execute(response, 0, response.length);
 }
 
-var options = { device: process.argv[2], path: "GET /api.json HTTP/1.1" + CRLF + CRLF };
-
+var options = { device: process.argv[2], message: "GET /api.json HTTP/1.1" + CRLF + CRLF };
 yoctopuce.request(options, function (response) {
   // You can handle the response in the callback or in the data event of the request.
   util.log(util.format("Raw:\n%s", response));
