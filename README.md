@@ -11,25 +11,33 @@ Please see the node-gyp [readme](https://github.com/TooTallNate/node-gyp/blob/ma
 
 With [npm](http://npmjs.org/):
 
-    npm install node-yoctopuce
+```bash
+$ npm install node-yoctopuce
+```
 
 From source:
 
-    node-gyp configure
-    node-gyp build
+```bash
+$ node-gyp configure
+$ node-gyp build
+```
 
 Viewing the examples
 ---
 
 Clone the node-yoctopuce repo, then install:
 
-    $ git clone git://github.com/schlafsack/node-yoctopuce.git --depth 1
-    $ cd node-yoctopuce
-    $ npm install
+```bash
+$ git clone git://github.com/schlafsack/node-yoctopuce.git --depth 1
+$ cd node-yoctopuce
+$ npm install
+```
 
 then run the examples:
 
-    $ node examples/httpRequest MyDevice
+```bash
+$ node examples/httpRequest MyDevice
+```
 
 API
 ---
