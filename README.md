@@ -1,10 +1,13 @@
 node-yoctopuce [![Build Status](https://secure.travis-ci.org/schlafsack/node-yoctopuce.png)](http://travis-ci.org/schlafsack/node-yoctopuce)
 ===
 
-###### Access Yoctopuce devices from node.js
+###### Access Yoctopuce devices using [node.js](http://nodejs.org)
 
 Installing the module
 ---
+
+This is a native binding to the low level yoctopuce api. Installation requires an envrionment suitable for compiling C/C++ using [node-gyp](https://github.com/TooTallNate/node-gyp).
+Please see the node-gyp [readme](https://github.com/TooTallNate/node-gyp/blob/master/README.md) for more information.
 
 With [npm](http://npmjs.org/):
 
@@ -14,6 +17,19 @@ From source:
 
     node-gyp configure
     node-gyp build
+
+Viewing the examples
+---
+
+Clone the node-yoctopuce repo, then install:
+
+    $ git clone git://github.com/schlafsack/node-yoctopuce.git --depth 1
+    $ cd node-yoctopuce
+    $ npm install
+
+then run the examples:
+
+    $ node examples/httpRequest MyDevice
 
 API
 ---
