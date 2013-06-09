@@ -107,7 +107,7 @@ var path = yapi.getDevicePath(descriptor);
 
 Returns a function descriptor for a function identified by a class and a full hardware id or logical name.
 
-A function hardware id takes the form <device>.<function>.
+A function hardware id takes the form 'device.function'.
 
 ```javascript
 var functionClass = 'Temperature';
