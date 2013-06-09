@@ -167,6 +167,65 @@ var url = 'http://remote:4444/';
 yapi.unregisterHub(url);
 ```
 
+#####Event: log
+
+The `log` event is emitted when the YAPI library needs to log debug messages. 
+
+```javascript
+yapi.on("log", function (message) {
+  util.log(util.format("Log %s.", message));
+});
+```
+
+#####Event: deviceLog
+
+The `deviceLog` event is emitted when the YAPI library detects a device event. 
+
+```javascript
+yapi.on("deviceLog", function (descriptor) {
+  util.log(util.format("device log %d.", descriptor));
+});
+```
+
+#####Event: deviceArrival
+
+The `deviceArrival` event is emitted when the YAPI library detects a device has arrived. 
+
+```javascript
+yapi.on("deviceArrival", function (descriptor) {
+  util.log(util.format("device arrived %d.", descriptor));
+});
+```
+
+#####Event: deviceRemoval
+
+The `deviceRemoval` event is emitted when the YAPI library detects a device has been removed. 
+
+```javascript
+yapi.on("deviceRemoval", function (descriptor) {
+  util.log(util.format("device removed %d.", descriptor));
+});
+```
+
+#####Event: deviceChange
+
+The `deviceChange` event is emitted when the YAPI library detects that the logical name of a device has changed. 
+
+```javascript
+yapi.on("deviceChange", function (descriptor) {
+  util.log(util.format("device changed %d.", descriptor));
+});
+```
+
+#####Event: functionUpdate
+
+The `functionUpdate` event is emitted when the YAPI library detects that the value of a function has changed. 
+
+```javascript
+yapi.on("functionUpdate", function (descriptor, value) {
+  util.log(util.format("function: %d value: %s.", descriptor, value));
+});
+```
 
 Licence
 ---
