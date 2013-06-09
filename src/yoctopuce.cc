@@ -366,7 +366,7 @@ namespace node_yoctopuce {
         YAPI_FUNCTION function_handle;
 
         if (YISERR(function_handle = yapiGetFunction(function_class, function, errmsg))) {
-            THROW("GetDevice failed: ", errmsg, ex);
+            THROW("GetFunction failed: ", errmsg, ex);
             return scope.Close(ex);
         }
 
@@ -506,7 +506,7 @@ namespace node_yoctopuce {
 
         if (YISERR(yapiGetFunctionInfo(arg, &device, function_serial, function_id,
             function_logical_name, function_value, errmsg))) {
-                THROW("GetDeviceInfo failed: ", errmsg, ex);
+                THROW("GetFunctionInfo failed: ", errmsg, ex);
                 return scope.Close(ex);
         }
 
