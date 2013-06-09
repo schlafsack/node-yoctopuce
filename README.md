@@ -42,7 +42,131 @@ $ node examples/httpRequest MyDevice
 API
 ---
 
+The API is split into two sections. Firstly a high level, node-like, asynchronous API and secondly the synchronous bindings to the native YAPI library.
+
+####node-yocotpuce API
+
 ###### Coming soon...
+
+####YAPI
+
+#####yapi.checkLogicalName(name)
+
+Verifies if a given logical name is valid or not for the yocotpuce API.
+
+```javascript
+var valid = yapi.checkLogicalName(name);
+```
+
+#####yapi.getAllDevices()
+
+Returns an array of descriptors for the devices visible to the API.
+
+```javascript
+var descriptors = yapi.getAllDevices();
+```
+
+#####yapi.getApiVersion()
+
+Returns version information for the YAPI library.
+
+```javascript
+var apiVersion = yapi.getApiVersion();
+```
+
+#####yapi.getDevice(identifier)
+
+Returns the device descriptor for a device identified by a serial number, logical name or URL.
+
+```javascript
+var identifier = 'THRMCPL1-0A420';
+var descriptor = yapi.getDevice(identifier);
+```
+
+#####yapi.getDeviceInfo(descriptor)
+
+Returns the device information for a device identified by a device descriptor.
+
+```javascript
+var descriptor = 239;
+var info = yapi.getDeviceInfo(descriptor);
+```
+
+#####yapi.getDevicePath(descriptor)
+
+Returns the device's serial number and path to use when making an intial http request.
+
+```javascript
+var descriptor = 239;
+var path = yapi.getDevicePath(descriptor);
+```
+
+#####yapi.getFunction(functionClass, functionName);
+
+Returns a function descriptor for a function identified by a class and a full hardware id or logical name.
+
+A function hardware id takes the form <device>.<function>.
+
+```javascript
+var functionClass = 'Temperature';
+var functionName = 'THRMCPL1-0A420.temperature1';
+var descriptor = yapi.getFunction(functionClass, functionName);
+```
+
+#####yapi.getFunctionInfo(descriptor)
+
+Returns the function information for a function identified by a function descriptor.
+
+```javascript
+var descriptor = 5374191;
+var info = yapi.getFunctionInfo(descriptor);
+```
+
+#####yapi.getFunctionsByClass(functionClass)
+
+Returns a list of descriptors for functions in the given class.
+
+```javascript
+var functionClass = 'Temperature';
+var descriptors = yapi.getFunctionsByClass(functionClass);
+```
+
+#####yapi.getFunctionsByDevice(descriptor)
+
+Returns a list of descriptors for the functions of the device identified by the descriptor.
+
+```javascript
+var descriptor = 239;
+var descriptors = yapi.getFunctionsByClass(functionClass);
+```
+
+#####yapi.httpRequest(identifier, message)
+
+Makes an http request to the device identified by a serial number, logical name or URL. 
+
+```javascript
+var identifier = 'THRMCPL1-0A420';
+var response = yapi.httpRequest(identifier, "GET /api.json HTTP/1.1" + CRLF + CRLF);
+```
+
+#####yapi.registerHub(url)
+
+Registers a network URL to be scanned for devices. 
+
+```javascript
+var url = 'http://remote:4444/';
+yapi.registerHub(url);
+```
+
+#####yapi.unregisterHub(url)
+
+Unregisters a network URL. 
+
+```javascript
+var url = 'http://remote:4444/';
+yapi.unregisterHub(url);
+```
+
 
 Licence
 ---
