@@ -1,6 +1,11 @@
 ## node-yoctopuce change log
 
-#### 2013.06.06 - version 0.0.2 (unstable)
+#### 2013.06.09 - version 0.0.3 (unstable)
+
+- Added yapi documentation
+- Async http request modifications, still a work in progress.
+
+#### 2013.06.06 - version 0.0.2 (unstable) - 0b17398a315844e86b18b8ed1ad6cdef34ef6fb8
 
 - Added asynchronous implementation of httpRequest.
 
