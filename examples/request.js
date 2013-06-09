@@ -28,34 +28,22 @@
 var yoctopuce = require('../');
 var util = require('util');
 
-yoctopuce.on("log", function (message) {
-  util.log(util.format("Log %s.", message));
+var CRLF = '\r\n';
+
+if (process.argv.length < 3) {
+  util.log("Use: node httpRequest.js devicename");
+  process.exit();
+}
+
+var options = { device: process.argv[2], message: "GET /api.json HTTP/1.1" + CRLF + CRLF };
+yoctopuce.request(options, function (response) {
+  // You can handle the response in the callback or in the data event of the request.
+  util.log(util.format("Raw:\n%s", response));
+}).on("error", function (err) {
+  util.log(util.format("Error: %s", err));
+}).on("headers", function (headers) {
+  util.log(util.format("Headers:\n%s", util.inspect(headers, { showHidden: true, depth: null })));
+}).on("body", function (body) {
+  var json = JSON.parse(body);
+  util.log(util.format("Body:\n%s", util.inspect(json, { showHidden: true, depth: null })));
 });
-
-yoctopuce.on("deviceLog", function (device) {
-  util.log(util.format("device log %d.", device));
-});
-
-yoctopuce.on("deviceArrival", function (device) {
-  util.log(util.format("device arrived %d.", device));
-});
-
-yoctopuce.on("deviceRemoval", function (device) {
-  util.log(util.format("device removed %d.", device));
-});
-
-yoctopuce.on("deviceChange", function (device) {
-  util.log(util.format("device changed %d.", device));
-});
-
-yoctopuce.on("functionUpdate", function (func, message) {
-  util.log(util.format("function: %d value: %s.", func, message));
-});
-
-util.print("use ctrl-c to quit.\n");
-
-setInterval(function () {
-  // Keep Alive.
-}, 10000);
-
-

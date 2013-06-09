@@ -25,22 +25,21 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
-var functionClass, functionName, fnct;
+var deviceId, deviceInfo;
 
-if (process.argv.length < 4) {
-  util.log("Use: node getFunction.js functionclass function");
+if (process.argv.length < 3) {
+  util.log("Use: node getDeviceInfo.js deviceId");
   process.exit();
 }
 
-functionClass = process.argv[2];
-functionName = process.argv[3];
+deviceId = parseInt(process.argv[2], 0);
 
 try {
-  fnct = yoctopuce.getFunction(functionClass, functionName);
-  util.log(util.format("Function %s:%s found with id %d.", functionClass, functionName, fnct));
+  deviceInfo = yapi.getDeviceInfo(deviceId);
+  util.log(util.format("Device Info:\n%s", util.inspect(deviceInfo, { showHidden: true, depth: null })));
 } catch (ex) {
   util.log(ex);
-  util.log(util.format("Error getting function %s:%s", functionClass, functionName));
+  util.log(util.format("Error getting info for device %d.", deviceId));
 }

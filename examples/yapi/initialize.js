@@ -25,40 +25,7 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
-var HTTPParser = process.binding('http_parser').HTTPParser;
-var deviceName;
 
-var CRLF = '\r\n';
-
-if (process.argv.length < 3) {
-  util.log("Use: node httpRequest.js devicename");
-  process.exit();
-}
-
-function logResponse(data) {
-  var response, parser;
-  response = new Buffer(data);
-  parser = new HTTPParser(HTTPParser.RESPONSE);
-  parser.onBody = function (b, start, len) {
-    var json, body;
-    body = b.slice(start, start + len);
-    json = JSON.parse(body);
-    util.log(util.format("Response:\n%s", util.inspect(json, { showHidden: true, depth: null })));
-  };
-  parser.onHeadersComplete = function (info) {
-    util.log(util.format("Headers:\n%s", util.inspect(info, { showHidden: true, depth: null })));
-  };
-  parser.execute(response, 0, response.length);
-}
-
-deviceName = process.argv[2];
-
-try {
-  var response = yoctopuce.httpRequest(deviceName, "GET /api.json HTTP/1.1" + CRLF + CRLF);
-  logResponse(response);
-} catch (ex) {
-  util.log(ex);
-  util.log(util.format("Error making http request to device %s.", deviceName));
-}
+util.log(util.format("Yapi Initialized:\n%s", util.inspect(yapi, { showHidden: true, depth: null })));

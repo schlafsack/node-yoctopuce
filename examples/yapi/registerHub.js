@@ -25,21 +25,43 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
-var deviceId, deviceInfo;
+var root, devices, deviceId;
 
 if (process.argv.length < 3) {
-  util.log("Use: node getDeviceInfo.js deviceId");
+  util.log("Use: node registerHub.js hubRoot");
   process.exit();
 }
 
-deviceId = parseInt(process.argv[2], 0);
-
-try {
-  deviceInfo = yoctopuce.getDeviceInfo(deviceId);
-  util.log(util.format("Device Info:\n%s", util.inspect(deviceInfo, { showHidden: true, depth: null })));
-} catch (ex) {
-  util.log(ex);
-  util.log(util.format("Error getting info for device %d.", deviceId));
+function displayDevices() {
+  var deviceInfo, i, devices = yapi.getAllDevices();
+  if (Array.isArray(devices)) {
+    util.log(util.format("%d devices found:", devices.length));
+    for (i = 0; i < devices.length; i++) {
+      deviceId = devices[i];
+      util.log(util.format("Device found with id %d.", devices[i]));
+      try {
+        deviceInfo = yapi.getDeviceInfo(deviceId);
+        util.log(util.format("Device Info:\n%s", util.inspect(deviceInfo, { showHidden: true, depth: null })));
+      } catch (ex) {
+        util.log(ex);
+        util.log(util.format("Error getting info for device %d.", deviceId));
+      }
+    }
+  }
 }
+
+// e.g. yoctopuce.registerHub("http://peevay:4444/");
+root = process.argv[2];
+
+util.log("With no hub registered:");
+displayDevices();
+
+util.log(util.format("With %s registered:", root));
+yapi.registerHub(root);
+displayDevices();
+
+util.log(util.format("With %s unregistered:", root));
+yapi.unregisterHub(root);
+displayDevices();

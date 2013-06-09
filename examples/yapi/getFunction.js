@@ -25,7 +25,22 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
+var functionClass, functionName, fnct;
 
-util.log(util.format("Yoctopuce Initialized:\n%s", util.inspect(yoctopuce, { showHidden: true, depth: null })));
+if (process.argv.length < 4) {
+  util.log("Use: node getFunction.js functionclass function");
+  process.exit();
+}
+
+functionClass = process.argv[2];
+functionName = process.argv[3];
+
+try {
+  fnct = yapi.getFunction(functionClass, functionName);
+  util.log(util.format("Function %s:%s found with id %d.", functionClass, functionName, fnct));
+} catch (ex) {
+  util.log(ex);
+  util.log(util.format("Error getting function %s:%s", functionClass, functionName));
+}

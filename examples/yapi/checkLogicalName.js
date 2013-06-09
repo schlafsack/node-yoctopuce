@@ -25,43 +25,21 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
-var root, devices, deviceId;
+var logicalName, valid;
 
 if (process.argv.length < 3) {
-  util.log("Use: node registerHub.js hubRoot");
+  util.log("Use: node checkLogicalName logicalName");
   process.exit();
 }
 
-function displayDevices() {
-  var deviceInfo, i, devices = yoctopuce.getAllDevices();
-  if (Array.isArray(devices)) {
-    util.log(util.format("%d devices found:", devices.length));
-    for (i = 0; i < devices.length; i++) {
-      deviceId = devices[i];
-      util.log(util.format("Device found with id %d.", devices[i]));
-      try {
-        deviceInfo = yoctopuce.getDeviceInfo(deviceId);
-        util.log(util.format("Device Info:\n%s", util.inspect(deviceInfo, { showHidden: true, depth: null })));
-      } catch (ex) {
-        util.log(ex);
-        util.log(util.format("Error getting info for device %d.", deviceId));
-      }
-    }
-  }
+logicalName = process.argv[2];
+valid = yapi.checkLogicalName(logicalName);
+
+if (valid) {
+  util.log(util.format("Logical name %s is valid", logicalName));
+} else {
+  util.log(util.format("Logical name %s is invalid", logicalName));
 }
 
-// e.g. yoctopuce.registerHub("http://peevay:4444/");
-root = process.argv[2];
-
-util.log("With no hub registered:");
-displayDevices();
-
-util.log(util.format("With %s registered:", root));
-yoctopuce.registerHub(root);
-displayDevices();
-
-util.log(util.format("With %s unregistered:", root));
-yoctopuce.unregisterHub(root);
-displayDevices();

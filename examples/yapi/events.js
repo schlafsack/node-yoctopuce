@@ -25,21 +25,37 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
-var deviceId, devicePath;
 
-if (process.argv.length < 3) {
-  util.log("Use: node getDevicePath.js deviceId");
-  process.exit();
-}
+yapi.on("log", function (message) {
+  util.log(util.format("Log %s.", message));
+});
 
-deviceId = parseInt(process.argv[2], 0);
+yapi.on("deviceLog", function (device) {
+  util.log(util.format("device log %d.", device));
+});
 
-try {
-  devicePath = yoctopuce.getDevicePath(deviceId);
-  util.log(util.format("Device Path:\n%s", util.inspect(devicePath, { showHidden : true, depth : null })));
-} catch (ex) {
-  util.log(ex);
-  util.log(util.format("Error getting path for device %d.", deviceId));
-}
+yapi.on("deviceArrival", function (device) {
+  util.log(util.format("device arrived %d.", device));
+});
+
+yapi.on("deviceRemoval", function (device) {
+  util.log(util.format("device removed %d.", device));
+});
+
+yapi.on("deviceChange", function (device) {
+  util.log(util.format("device changed %d.", device));
+});
+
+yapi.on("functionUpdate", function (func, message) {
+  util.log(util.format("function: %d value: %s.", func, message));
+});
+
+util.print("use ctrl-c to quit.\n");
+
+setInterval(function () {
+  // Keep Alive.
+}, 10000);
+
+

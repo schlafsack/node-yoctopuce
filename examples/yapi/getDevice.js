@@ -25,28 +25,21 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
-var deviceId, functionId, functions;
+var device, deviceName;
 
 if (process.argv.length < 3) {
-  util.log("Use: node getFunctionsByDevice.js deviceId <functionId>");
+  util.log("Use: node getDevice.js devicename");
   process.exit();
 }
 
-deviceId = parseInt(process.argv[2], 0);
-functionId = parseInt(process.argv[3], 0);
+deviceName = process.argv[2];
 
-if (functionId) {
-  functions = yoctopuce.getFunctionsByDevice(deviceId, functionId);
-} else {
-  functions = yoctopuce.getFunctionsByDevice(deviceId);
-}
-
-if (Array.isArray(functions)) {
-  util.log(util.format("%d functions found:", functions.length));
-  var i;
-  for (i = 0; i < functions.length; i++) {
-    util.log(util.format("Function found with id %d.", functions[i]));
-  }
+try {
+  device = yapi.getDevice(deviceName);
+  util.log(util.format("Device %s found with id %d.", deviceName, device));
+} catch (ex) {
+  util.log(ex);
+  util.log(util.format("Error getting device %s.", deviceName));
 }

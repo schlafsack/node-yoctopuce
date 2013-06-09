@@ -25,28 +25,8 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
-var functionClass, functionId, functions;
 
-if (process.argv.length < 3) {
-  util.log("Use: node getFunctionsByClass.js functionclass <functionId>");
-  process.exit();
-}
-
-functionClass = process.argv[2];
-functionId = parseInt(process.argv[3], 0);
-
-if (functionId) {
-  functions = yoctopuce.getFunctionsByClass(functionClass, functionId);
-} else {
-  functions = yoctopuce.getFunctionsByClass(functionClass);
-}
-
-if (Array.isArray(functions)) {
-  var i;
-  util.log(util.format("%d functions found:", functions.length));
-  for (i = 0; i < functions.length; i++) {
-    util.log(util.format("Function found with id %d.", functions[i]));
-  }
-}
+var apiVersion = yapi.getApiVersion();
+util.log(util.format("API Version:\n%s", util.inspect(apiVersion, { showHidden: true, depth: null })));

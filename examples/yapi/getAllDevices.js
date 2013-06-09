@@ -25,21 +25,16 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
-var logicalName, valid;
 
-if (process.argv.length < 3) {
-  util.log("Use: node checkLogicalName.js logicalName");
-  process.exit();
-}
+var devices = yapi.getAllDevices();
 
-logicalName = process.argv[2];
-valid = yoctopuce.checkLogicalName(logicalName);
-
-if (valid) {
-  util.log(util.format("Logical name %s is valid", logicalName));
-} else {
-  util.log(util.format("Logical name %s is invalid", logicalName));
+if (Array.isArray(devices)) {
+  var i;
+  util.log(util.format("%d devices found:", devices.length));
+  for (i = 0; i < devices.length; i++) {
+    util.log(util.format("Device found with id %d.", devices[i]));
+  }
 }
 

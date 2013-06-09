@@ -25,39 +25,21 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
-var HTTPParser = process.binding('http_parser').HTTPParser;
-
-var CRLF = '\r\n';
+var deviceId, devicePath;
 
 if (process.argv.length < 3) {
-  util.log("Use: node httpRequest.js devicename");
+  util.log("Use: node getDevicePath.js deviceId");
   process.exit();
 }
 
-function logResponse(data) {
-  var response, parser;
-  response = new Buffer(data);
-  parser = new HTTPParser(HTTPParser.RESPONSE);
-  parser.onBody = function (b, start, len) {
-    var json, body;
-    body = b.slice(start, start + len);
-    json = JSON.parse(body);
-    util.log(util.format("Response:\n%s", util.inspect(json, { showHidden: true, depth: null })));
-  };
-  parser.onHeadersComplete = function (info) {
-    util.log(util.format("Headers:\n%s", util.inspect(info, { showHidden: true, depth: null })));
-  };
-  parser.execute(response, 0, response.length);
-}
+deviceId = parseInt(process.argv[2], 0);
 
-var options = { device: process.argv[2], message: "GET /api.json HTTP/1.1" + CRLF + CRLF };
-yoctopuce.request(options, function (response) {
-  // You can handle the response in the callback or in the data event of the request.
-  util.log(util.format("Raw:\n%s", response));
-}).on("error", function (err) {
-  util.log(util.format("Error:\n%s", err));
-}).on("data", function (data) {
-  logResponse(data);
-});
+try {
+  devicePath = yapi.getDevicePath(deviceId);
+  util.log(util.format("Device Path:\n%s", util.inspect(devicePath, { showHidden : true, depth : null })));
+} catch (ex) {
+  util.log(ex);
+  util.log(util.format("Error getting path for device %d.", deviceId));
+}

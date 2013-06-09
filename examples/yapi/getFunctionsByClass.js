@@ -25,16 +25,28 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
+var functionClass, functionId, functions;
 
-var devices = yoctopuce.getAllDevices();
-
-if (Array.isArray(devices)) {
-  var i;
-  util.log(util.format("%d devices found:", devices.length));
-  for (i = 0; i < devices.length; i++) {
-    util.log(util.format("Device found with id %d.", devices[i]));
-  }
+if (process.argv.length < 3) {
+  util.log("Use: node getFunctionsByClass.js functionclass <functionId>");
+  process.exit();
 }
 
+functionClass = process.argv[2];
+functionId = parseInt(process.argv[3], 0);
+
+if (functionId) {
+  functions = yapi.getFunctionsByClass(functionClass, functionId);
+} else {
+  functions = yapi.getFunctionsByClass(functionClass);
+}
+
+if (Array.isArray(functions)) {
+  var i;
+  util.log(util.format("%d functions found:", functions.length));
+  for (i = 0; i < functions.length; i++) {
+    util.log(util.format("Function found with id %d.", functions[i]));
+  }
+}

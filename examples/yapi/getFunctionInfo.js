@@ -25,8 +25,21 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yoctopuce = require('../');
+var yapi = require('../../.').yapi;
 var util = require('util');
+var functionId, functionInfo;
 
-var apiVersion = yoctopuce.getApiVersion();
-util.log(util.format("API Version:\n%s", util.inspect(apiVersion, { showHidden: true, depth: null })));
+if (process.argv.length < 3) {
+  util.log("Use: node getFunctionInfo.js functionId");
+  process.exit();
+}
+
+functionId = parseInt(process.argv[2], 0);
+
+try {
+  functionInfo = yapi.getFunctionInfo(functionId);
+  util.log(util.format("Function Info:\n%s", util.inspect(functionInfo, { showHidden: true, depth: null })));
+} catch (ex) {
+  util.log(ex);
+  util.log(util.format("Error getting info for function %d.", functionId));
+}
