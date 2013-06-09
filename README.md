@@ -1,5 +1,7 @@
-node-yoctopuce [![Build Status](https://secure.travis-ci.org/schlafsack/node-yoctopuce.png)](http://travis-ci.org/schlafsack/node-yoctopuce)
+node-yoctopuce 
 ===
+[![Build Status](https://secure.travis-ci.org/schlafsack/node-yoctopuce.png)](http://travis-ci.org/schlafsack/node-yoctopuce)
+[![NPM version](https://badge.fury.io/js/node-yoctopuce.png)](http://badge.fury.io/js/node-yoctopuce)
 
 ###### Access Yoctopuce devices using [node.js](http://nodejs.org)
 
@@ -105,7 +107,7 @@ var path = yapi.getDevicePath(descriptor);
 
 Returns a function descriptor for a function identified by a class and a full hardware id or logical name.
 
-A function hardware id takes the form <device>.<function>.
+A function hardware id takes the form 'device.function'.
 
 ```javascript
 var functionClass = 'Temperature';
