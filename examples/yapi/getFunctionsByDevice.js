@@ -25,9 +25,12 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yapi = require('../../.').yapi;
+var yoctopuce = require('../../.');
+var yapi = yoctopuce.yapi;
 var util = require('util');
 var deviceId, functionId, functions;
+
+yoctopuce.enableUsb();
 
 if (process.argv.length < 3) {
   util.log("Use: node getFunctionsByDevice.js deviceId <functionId>");

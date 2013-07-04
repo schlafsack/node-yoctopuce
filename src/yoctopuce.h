@@ -1,5 +1,4 @@
-﻿
-// -*- C++ -*-
+﻿// -*- C++ -*-
 //
 // Copyright (c) 2013, Tom Greasley <tom@greasley.com>
 //
@@ -52,6 +51,8 @@ namespace node_yoctopuce {
         std::string error;
         YRETCODE result;
     };
+
+    static v8::Persistent<v8::String> usb_symbol;
 
     class Yoctopuce : public node::ObjectWrap {
     public:

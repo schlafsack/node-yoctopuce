@@ -1,5 +1,4 @@
-﻿
-// -*- C++ -*-
+﻿// -*- C++ -*-
 //
 // Copyright (c) 2013, Tom Greasley <tom@greasley.com>
 //
@@ -40,6 +39,8 @@ using v8::Value;
 using v8::Undefined;
 using v8::ThrowException;
 
+using node::SetMethod;
+
 using std::queue;
 using std::swap;
 
@@ -57,23 +58,26 @@ namespace node_yoctopuce {
         target_handle = Persistent<Object>::New(target);
 
         // Expose API methods
-        NODE_SET_METHOD(target_handle, "updateDeviceList", UpdateDeviceList);
-        NODE_SET_METHOD(target_handle, "handleEvents", HandleEvents);
-        NODE_SET_METHOD(target_handle, "registerHub", RegisterHub);
-        NODE_SET_METHOD(target_handle, "preregisterHub", PreregisterHub);
-        NODE_SET_METHOD(target_handle, "unregisterHub", UnregisterHub);
-        NODE_SET_METHOD(target_handle, "checkLogicalName", CheckLogicalName);
-        NODE_SET_METHOD(target_handle, "getApiVersion", GetApiVersion);
-        NODE_SET_METHOD(target_handle, "getDevice", GetDevice);
-        NODE_SET_METHOD(target_handle, "getAllDevices", GetAllDevices);
-        NODE_SET_METHOD(target_handle, "getDeviceInfo", GetDeviceInfo);
-        NODE_SET_METHOD(target_handle, "getDevicePath", GetDevicePath);
-        NODE_SET_METHOD(target_handle, "getFunction", GetFunction);
-        NODE_SET_METHOD(target_handle, "getFunctionsByClass", GetFunctionsByClass);
-        NODE_SET_METHOD(target_handle, "getFunctionsByDevice", GetFunctionsByDevice);
-        NODE_SET_METHOD(target_handle, "getFunctionInfo", GetFunctionInfo);
-        NODE_SET_METHOD(target_handle, "httpRequest", HttpRequest);
-        NODE_SET_METHOD(target_handle, "httpRequestAsync", HttpRequestAsync);
+        SetMethod(target_handle, "updateDeviceList", UpdateDeviceList);
+        SetMethod(target_handle, "handleEvents", HandleEvents);
+        SetMethod(target_handle, "registerHub", RegisterHub);
+        SetMethod(target_handle, "preregisterHub", PreregisterHub);
+        SetMethod(target_handle, "unregisterHub", UnregisterHub);
+        SetMethod(target_handle, "checkLogicalName", CheckLogicalName);
+        SetMethod(target_handle, "getApiVersion", GetApiVersion);
+        SetMethod(target_handle, "getDevice", GetDevice);
+        SetMethod(target_handle, "getAllDevices", GetAllDevices);
+        SetMethod(target_handle, "getDeviceInfo", GetDeviceInfo);
+        SetMethod(target_handle, "getDevicePath", GetDevicePath);
+        SetMethod(target_handle, "getFunction", GetFunction);
+        SetMethod(target_handle, "getFunctionsByClass", GetFunctionsByClass);
+        SetMethod(target_handle, "getFunctionsByDevice", GetFunctionsByDevice);
+        SetMethod(target_handle, "getFunctionInfo", GetFunctionInfo);
+        SetMethod(target_handle, "httpRequest", HttpRequest);
+        SetMethod(target_handle, "httpRequestAsync", HttpRequestAsync);
+
+        usb_symbol = NODE_PSYMBOL("usb");
+        target_handle->Set(usb_symbol, usb_symbol);
 
         // Set up the event queue
         uv_mutex_init(&event_queue_mutex);

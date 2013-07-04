@@ -25,8 +25,11 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yapi = require('../../.').yapi;
+var yoctopuce = require('../../.');
+var yapi = yoctopuce.yapi;
 var util = require('util');
+
+yoctopuce.enableUsb();
 
 yapi.on("log", function (message) {
   util.log(util.format("Log %s.", message));

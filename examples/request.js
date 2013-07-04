@@ -25,17 +25,23 @@
 /*jshint globalstrict: true*/
 "use strict";
 
+var CRLF = '\r\n';
 var yoctopuce = require('../');
 var util = require('util');
+var argv = require('optimist')
+    .usage('Make a REST request to a device.\nUsage: $0 -d [device]')
+    .demand('device')
+    .alias('device', 'd')
+    .describe('device', 'The device serial number.')
+    .argv;
 
-var CRLF = '\r\n';
+yoctopuce.enableUsb();
 
-if (process.argv.length < 3) {
-  util.log("Use: node httpRequest.js devicename");
-  process.exit();
-}
+var options = {
+  device: argv.device,
+  message: "GET /api.json HTTP/1.1" + CRLF + CRLF
+};
 
-var options = { device: process.argv[2], message: "GET /api.json HTTP/1.1" + CRLF + CRLF };
 yoctopuce.request(options, function (response) {
   // You can handle the response in the callback or in the data event of the request.
   util.log(util.format("Raw:\n%s", response));
@@ -44,6 +50,7 @@ yoctopuce.request(options, function (response) {
 }).on("headers", function (headers) {
   util.log(util.format("Headers:\n%s", util.inspect(headers, { showHidden: true, depth: null })));
 }).on("body", function (body) {
-  var json = JSON.parse(body);
+  var data = body.toString("UTF-8"),
+    json = JSON.parse(data);
   util.log(util.format("Body:\n%s", util.inspect(json, { showHidden: true, depth: null })));
 });

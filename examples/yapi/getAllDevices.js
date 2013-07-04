@@ -25,9 +25,11 @@
 /*jshint globalstrict: true*/
 "use strict";
 
-var yapi = require('../../.').yapi;
+var yoctopuce = require('../../.');
+var yapi = yoctopuce.yapi;
 var util = require('util');
 
+yoctopuce.enableUsb();
 var devices = yapi.getAllDevices();
 
 if (Array.isArray(devices)) {
