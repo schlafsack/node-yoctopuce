@@ -29,7 +29,7 @@
 #include <node.h>
 #include <v8.h>
 #include <yapi.h>
-#include <nan.h>
+//#include <nan.h>
 
 #include <queue>
 #include <string>
