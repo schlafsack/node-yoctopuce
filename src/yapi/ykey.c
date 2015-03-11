@@ -1,39 +1,39 @@
 /*********************************************************************
  *
- * $Id: ykey.c 6846 2012-07-09 17:41:26Z seb $
+ * $Id: ykey.c 15697 2014-04-04 10:30:56Z mvuilleu $
  *
  * Implementation of standard key computations
  *
  * - - - - - - - - - License information: - - - - - - - - - 
  *
- * Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
+ *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
- * 1) If you have obtained this file from www.yoctopuce.com,
- *    Yoctopuce Sarl licenses to you (hereafter Licensee) the
- *    right to use, modify, copy, and integrate this source file
- *    into your own solution for the sole purpose of interfacing
- *    a Yoctopuce product with Licensee's solution.
+ *  Yoctopuce Sarl (hereafter Licensor) grants to you a perpetual
+ *  non-exclusive license to use, modify, copy and integrate this
+ *  file into your software for the sole purpose of interfacing 
+ *  with Yoctopuce products. 
  *
- *    The use of this file and all relationship between Yoctopuce 
- *    and Licensee are governed by Yoctopuce General Terms and 
- *    Conditions.
+ *  You may reproduce and distribute copies of this file in 
+ *  source or object form, as long as the sole purpose of this
+ *  code is to interface with Yoctopuce products. You must retain 
+ *  this notice in the distributed source file.
  *
- *    THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
- *    WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
- *    WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS 
- *    FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
- *    EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
- *    INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, 
- *    COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR 
- *    SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT 
- *    LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
- *    CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
- *    BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
- *    WARRANTY, OR OTHERWISE.
+ *  You should refer to Yoctopuce General Terms and Conditions
+ *  for additional information regarding your rights and 
+ *  obligations.
  *
- * 2) If your intent is not to interface with Yoctopuce products,
- *    you are not entitled to use, read or create any derived 
- *    material from this source file.
+ *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS 
+ *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
+ *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
+ *  INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, 
+ *  COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR 
+ *  SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT 
+ *  LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
+ *  CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
+ *  BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
+ *  WARRANTY, OR OTHERWISE.
  *
  *********************************************************************/
 
@@ -49,26 +49,26 @@
 
 static char btohexa_low_high(u8 b)
 {
-	b >>= 4;
-	return (b>0x9u) ? b+'a'-10:b+'0';
+    b >>= 4;
+    return (b>9u) ? b+'a'-10 : b+'0';
 }
 
 static char btohexa_low_low(u8 b)
 {
-	b &= 0x0F;
-	return (b>9u) ? b+'a'-10:b+'0';
+    b &= 0x0F;
+    return (b>9u) ? b+'a'-10 : b+'0';
 }
-
 
 void bin2str(char *to, const u8 *p, u16 len, u8 addnull) 
 {    
-  	for (; len--; p++) {
+    for (; len--; p++) {
     	*to++ = btohexa_low_high(*p);
     	*to++ = btohexa_low_low(*p);
-	}
-	if(addnull)
-  		*to = '\0';
+    }
+    if(addnull) *to = '\0';
 }
+
+#if !defined(MICROCHIP_API) || defined(HTTP_ON_NET)
 
 // compute the ha1 (in binary form)
 void ComputeAuthHA1(u8 *ha1, const char *user, const char *pass,  const char *realm) 
@@ -130,7 +130,7 @@ void ComputeAuthResponse(char *buf, const u8 *ha1, const char *nonce, const char
 int yParseWWWAuthenticate(char *replybuf, int replysize, char **method, char **realm, char **qop, char **nonce, char **opaque)
 {
     int     pos = 0;
-    char    *p, *start;
+    char    *p=replybuf, *start;
     
     while(pos < replysize) {
         while(pos < replysize && replybuf[pos] != '\r') pos++;
@@ -405,6 +405,8 @@ int yIterPsk(u8 *res, const char *ssid)
     return 1;
 }
 
+#endif
+
 #ifndef MICROCHIP_API
 /*
  * MD5 implementation below is mostly from Sergey Lyubka, author of SHTTPD.
@@ -591,8 +593,8 @@ void MD5Calculate(HASH_SUM *ctx, u8 digest[16])
     }
     byteReverse(ctx->in, 14);
     
-    ((u32 *) ctx->in)[14] = ctx->bits[0];
-    ((u32 *) ctx->in)[15] = ctx->bits[1];
+    ctx->in32[14] = ctx->bits[0];
+    ctx->in32[15] = ctx->bits[1];
     
     MD5Transform(ctx->buf, (u32 *) ctx->in);
     byteReverse((unsigned char *) ctx->buf, 4);

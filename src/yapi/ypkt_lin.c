@@ -1,41 +1,42 @@
 /*********************************************************************
  *
- * $Id: ypkt_lin.c 8950 2012-12-04 09:54:10Z seb $
+ * $Id: ypkt_lin.c 18744 2014-12-11 09:19:53Z seb $
  *
  * OS-specific USB packet layer, Linux version
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ * - - - - - - - - - License information: - - - - - - - - -
  *
- * Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
+ *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
- * 1) If you have obtained this file from www.yoctopuce.com,
- *    Yoctopuce Sarl licenses to you (hereafter Licensee) the
- *    right to use, modify, copy, and integrate this source file
- *    into your own solution for the sole purpose of interfacing
- *    a Yoctopuce product with Licensee's solution.
+ *  Yoctopuce Sarl (hereafter Licensor) grants to you a perpetual
+ *  non-exclusive license to use, modify, copy and integrate this
+ *  file into your software for the sole purpose of interfacing
+ *  with Yoctopuce products.
  *
- *    The use of this file and all relationship between Yoctopuce 
- *    and Licensee are governed by Yoctopuce General Terms and 
- *    Conditions.
+ *  You may reproduce and distribute copies of this file in
+ *  source or object form, as long as the sole purpose of this
+ *  code is to interface with Yoctopuce products. You must retain
+ *  this notice in the distributed source file.
  *
- *    THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
- *    WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
- *    WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS 
- *    FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
- *    EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
- *    INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, 
- *    COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR 
- *    SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT 
- *    LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
- *    CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
- *    BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
- *    WARRANTY, OR OTHERWISE.
+ *  You should refer to Yoctopuce General Terms and Conditions
+ *  for additional information regarding your rights and
+ *  obligations.
  *
- * 2) If your intent is not to interface with Yoctopuce products,
- *    you are not entitled to use, read or create any derived 
- *    material from this source file.
+ *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
+ *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
+ *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
+ *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
+ *  INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA,
+ *  COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR
+ *  SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT
+ *  LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
+ *  CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
+ *  BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
+ *  WARRANTY, OR OTHERWISE.
  *
  *********************************************************************/
+
 #define __FILE_ID__  "ypkt_lin"
 #include "yapi.h"
 #ifdef LINUX_API
@@ -45,11 +46,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define yLinSetErr(err,errmsg)  yLinSetErrEx(__LINE__,err,errmsg)
+#define yLinSetErr(intro, err,errmsg)  yLinSetErrEx(__LINE__,intro, err,errmsg)
 
-static int yLinSetErrEx(u32 line,int err,char *errmsg)
+static int yLinSetErrEx(u32 line,char *intro, int err,char *errmsg)
 {
-    char *msg;
+    const char *msg;
     if(errmsg==NULL)
         return YAPI_IO_ERROR;
      switch(err){
@@ -69,9 +70,13 @@ static int yLinSetErrEx(u32 line,int err,char *errmsg)
         default:
         case LIBUSB_ERROR_OTHER:        msg="Other error"; break;
     }
-    YSPRINTF(errmsg,YOCTO_ERRMSG_LEN,"LIN(%d):%s",line,msg);
+    if (intro){
+        YSPRINTF(errmsg,YOCTO_ERRMSG_LEN,"%s:%s",intro,msg);
+    } else{
+        YSPRINTF(errmsg,YOCTO_ERRMSG_LEN,"LIN(%d):%s",line,msg);
+    }
     HALLOG("LIN(%d):%s\n",line,msg);
-    return YAPI_IO_ERROR; 
+    return YAPI_IO_ERROR;
 };
 
 
@@ -91,7 +96,7 @@ static int yReserveGlobalAccess(yContextSt *ctx)
     size_t res;
     mode_t mode=0666;
     mode_t oldmode = umask(0000);
-    
+
     HALLOG("old mode (%#o)\n",oldmode);
     HALLOG("create fifo with (%#o)\n",mode);
     if(mkfifo(YOCTO_LOCK_PIPE,mode)<0) {
@@ -140,13 +145,92 @@ static void yReleaseGlobalAccess(yContextSt *ctx)
       }
 }
 
+typedef struct {
+    libusb_device *dev;
+    int desc_index;
+    int len;
+    char *string;
+    u64 expiration;
+} stringCacheSt;
+
+#define STRING_CACHE_SIZE 16
+#define STRING_CACHE_EXPIRATION 60000 //1 minutes
+static stringCacheSt stringCache[STRING_CACHE_SIZE];
 
 
+// on success data point to a null terminated string of max length-1 characters
+static int getUsbStringASCII(libusb_device_handle *hdl, libusb_device *dev, u8 desc_index, char *data, u32 length)
+{
+    u8  buffer[512];
+    u32 l,len;
+    int res,i;
+    stringCacheSt *c = stringCache;
+    stringCacheSt *f = NULL;
+    u64 now = yapiGetTickCount();
+
+    yEnterCriticalSection(&yContext->string_cache_cs);
+
+    for (i = 0; i < STRING_CACHE_SIZE; i++, c++) {
+        if (c->expiration > now) {
+            if(c->dev == dev && c->desc_index == desc_index) {
+                if (c->len > 0 && c->string) {
+                    len = c->len;
+                    if (c->len >= length)
+                        len = length-1;
+                    memcpy(data, c->string,  len);
+                    data[len] = 0;
+                    HALLOG("return string from cache (%p:%d->%s)\n",dev,desc_index,c->string);
+                    yLeaveCriticalSection(&yContext->string_cache_cs);
+                    return c->len;
+                } else {
+                    f = c;
+                    break;
+                }
+            }
+        } else {
+            if (c->string) {
+                yFree(c->string);
+                c->string =NULL;
+            }
+            if (f == NULL) {
+                f = c;
+            }
+        }
+    }
+
+    res=libusb_control_transfer(hdl, LIBUSB_ENDPOINT_IN,
+        LIBUSB_REQUEST_GET_DESCRIPTOR, (LIBUSB_DT_STRING << 8) | desc_index,
+        0, buffer, 512, 10000);
+    if(res<0) return res;
+
+    len=(buffer[0]-2)/2;
+    if (len >= length) {
+        len = length - 1;
+    }
+
+    for (l = 0; l < len; l++){
+        data[l] = (char) buffer[2+(l*2)];
+    }
+    data[len] = 0;
+
+    if (f != NULL) {
+        f->dev = dev;
+        f->desc_index = desc_index;
+        f->string = yMalloc(len+1);
+        memcpy(f->string, data, len+1);
+        f->len  = len;
+        f->expiration = yapiGetTickCount() + STRING_CACHE_EXPIRATION;
+        HALLOG("add string to cache (%p:%d->%s)\n",dev,desc_index,f->string);
+    }
+    yLeaveCriticalSection(&yContext->string_cache_cs);
+
+    return len;
+}
 
 
 static void *event_thread(void *param)
-{   
-    yContextSt *ctx=param;
+{
+    yContextSt *ctx = (yContextSt*)param;
     char            errmsg[YOCTO_ERRMSG_LEN];
     ctx->usb_thread_state = USB_THREAD_RUNNING;
     /* Non-blocking. See if the OS has any reports to give. */
@@ -158,8 +242,7 @@ static void *event_thread(void *param)
         tv.tv_sec = 1;
         res = libusb_handle_events_timeout(ctx->libusb, &tv);
         if (res < 0) {
-            yLinSetErr(res,errmsg);
-            HALLOG("%s",errmsg);
+            yLinSetErr("libusb_handle_events_timeout", res,errmsg);
             break;
         }
     }
@@ -169,15 +252,18 @@ static void *event_thread(void *param)
 }
 
 
-int yUSB_init(yContextSt *ctx,char *errmsg)
+int yyyUSB_init(yContextSt *ctx,char *errmsg)
 {
+    int res;
     if(!yReserveGlobalAccess(ctx)){
         return YERRMSG(YAPI_DOUBLE_ACCES,"Another process is already using yAPI");
     }
 
-
-    if(libusb_init(&ctx->libusb)!=0){
-        return YERRMSG(YAPI_IO_ERROR,"Unable to start lib USB");
+    memset(stringCache, 0, sizeof(stringCache));
+    yInitializeCriticalSection(&ctx->string_cache_cs);
+    res = libusb_init(&ctx->libusb);
+    if(res !=0){
+        return yLinSetErr("Unable to start lib USB", res,errmsg);
     }
 
     ctx->usb_thread_state = USB_THREAD_NOT_STARTED;
@@ -186,13 +272,16 @@ int yUSB_init(yContextSt *ctx,char *errmsg)
     while(ctx->usb_thread_state != USB_THREAD_RUNNING){
         usleep(50000);
     }
-                          
+
     return YAPI_SUCCESS;
 }
 
 
-int yUSB_stop(yContextSt *ctx,char *errmsg)
+int yyyUSB_stop(yContextSt *ctx,char *errmsg)
 {
+    int i;
+    stringCacheSt *c = stringCache;
+
     if(ctx->usb_thread_state == USB_THREAD_RUNNING){
         ctx->usb_thread_state = USB_THREAD_MUST_STOP;
         pthread_join(ctx->usb_thread,NULL);
@@ -201,6 +290,12 @@ int yUSB_stop(yContextSt *ctx,char *errmsg)
 
     libusb_exit(ctx->libusb);
     yReleaseGlobalAccess(ctx);
+    for (i = 0; i < STRING_CACHE_SIZE; i++, c++) {
+        if(c->string) {
+            yFree(c->string);
+        }
+    }
+    yDeleteCriticalSection(&ctx->string_cache_cs);
 
     return YAPI_SUCCESS;
 }
@@ -225,39 +320,18 @@ static int getDevConfig(libusb_device *dev, struct libusb_config_descriptor **co
 }
 
 
-static int getUsbStringASCII(libusb_device_handle *dev, u8 desc_index,  u8 *data, u32 length)
-{   
-    u8  buffer[512];
-    u32 l,len;
-    int res;
-                
-    res=libusb_control_transfer(dev, LIBUSB_ENDPOINT_IN,
-        LIBUSB_REQUEST_GET_DESCRIPTOR, (LIBUSB_DT_STRING << 8) | desc_index,
-        0, buffer, 512, 10000);
-    if(res<0) return res;
-
-    len=(buffer[0]-2)/2;
-    for(l=0;l<len && l<length;l++){
-        data[l] = buffer[2+(l*2)];
-    }
-    return len;
-}
-
-
-
-
-int yUSBGetInterfaces(yInterfaceSt **ifaces,int *nbifaceDetect,char *errmsg)
+int yyyUSBGetInterfaces(yInterfaceSt **ifaces,int *nbifaceDetect,char *errmsg)
 {
     libusb_device   **list;
     ssize_t         nbdev;
     int             returnval=YAPI_SUCCESS;
     int             i,j;
-    u32             nbifaceAlloc;
+    int             nbifaceAlloc;
     yInterfaceSt    *iface;
-    
+
     nbdev=libusb_get_device_list(yContext->libusb,&list);
     if(nbdev<0)
-        return yLinSetErr(nbdev,errmsg);
+        return yLinSetErr("Unable to get device list",nbdev,errmsg);
     HALLOG("%d devices found\n",nbdev);
 
      // allocate buffer for detected interfaces
@@ -265,30 +339,29 @@ int yUSBGetInterfaces(yInterfaceSt **ifaces,int *nbifaceDetect,char *errmsg)
     nbifaceAlloc  = nbdev*2;
     *ifaces = (yInterfaceSt*) yMalloc(nbifaceAlloc * sizeof(yInterfaceSt));
     memset(*ifaces,0,nbifaceAlloc * sizeof(yInterfaceSt));
- 
+
 
     for(i=0; i < nbdev; i++){
         int  res;
         struct libusb_device_descriptor desc;
         struct libusb_config_descriptor *config;
         libusb_device_handle *hdl;
-        
+
         libusb_device  *dev=list[i];
         if((res=libusb_get_device_descriptor(dev,&desc))!=0){
-            returnval = yLinSetErr(res,errmsg);
+            returnval = yLinSetErr("Unable to get device descriptor",res,errmsg);
             goto exit;
         }
         if(desc.idVendor!=YOCTO_VENDORID ){
             continue;
         }
-        HALLOG("open device %x:%x\n",desc.idVendor,desc.idProduct);                    
-            
+        HALLOG("open device %x:%x\n",desc.idVendor,desc.idProduct);
+
 
         if(getDevConfig(dev,&config)<0)
             continue;
 
         for(j=0 ; j < config->bNumInterfaces; j++){
-
             //ensure the buffer of detected interface is big enough
             if(*nbifaceDetect == nbifaceAlloc){
                 yInterfaceSt    *tmp;
@@ -310,16 +383,16 @@ int yUSBGetInterfaces(yInterfaceSt **ifaces,int *nbifaceDetect,char *errmsg)
             if(res==LIBUSB_ERROR_ACCESS){
                 returnval =YERRMSG(YAPI_IO_ERROR,"the user has insufficient permissions to access USB devices");
                 goto exit;
-            } 
-            if(res!=0){
-                HALLOG("unable to access device %x:%x\n",desc.idVendor,desc.idProduct);                    
-                continue;                
             }
-            HALLOG("try to get serial for %x:%x:%x\n",desc.idVendor,desc.idProduct,desc.iSerialNumber);
-            
-            res = getUsbStringASCII(hdl,desc.iSerialNumber,(u8*)iface->serial,YOCTO_SERIAL_LEN);              
+            if(res!=0){
+                HALLOG("unable to access device %x:%x\n",desc.idVendor,desc.idProduct);
+                continue;
+            }
+            HALLOG("try to get serial for %x:%x:%x (%p)\n",desc.idVendor,desc.idProduct,desc.iSerialNumber,dev);
+
+            res = getUsbStringASCII(hdl, dev, desc.iSerialNumber, iface->serial, YOCTO_SERIAL_LEN);
             if(res<0){
-                HALLOG("unable to get serial for device %x:%x\n",desc.idVendor,desc.idProduct);                                
+                HALLOG("unable to get serial for device %x:%x\n",desc.idVendor,desc.idProduct);
             }
             libusb_close(hdl);
             (*nbifaceDetect)++;
@@ -370,27 +443,33 @@ int yyyOShdlCompare( yPrivDeviceSt *dev, DevEnum *newdev)
 static void read_callback(struct libusb_transfer *transfer)
 {
     int res;
-    linRdTr      *lintr = transfer->user_data;
+    linRdTr      *lintr = (linRdTr*)transfer->user_data;
     yInterfaceSt *iface = lintr->iface;
-    switch(transfer->status){        
+    switch(transfer->status){
     case LIBUSB_TRANSFER_COMPLETED:
-        HALLOG("%s:%d pkt_arrived (len=%d)\n",iface->serial,iface->ifaceno,transfer->actual_length);
-        yyPushNewPkt(iface,&lintr->tmppkt);
-        res=libusb_submit_transfer(lintr->tr);
-        if(res<0){
-            HALLOG("%s:%d libusb_submit_transfer errror %X\n",iface->serial,iface->ifaceno,res);
+        //HALLOG("%s:%d pkt_arrived (len=%d)\n",iface->serial,iface->ifaceno,transfer->actual_length);
+        yPktQueuePushD2H(iface,&lintr->tmppkt,NULL);
+        if (iface->flags.yyySetupDone) {
+            res=libusb_submit_transfer(lintr->tr);
+            if(res<0){
+                HALLOG("%s:%d libusb_submit_transfer errror %X\n",iface->serial,iface->ifaceno,res);
+            }
         }
         return;
     case LIBUSB_TRANSFER_ERROR:
         HALLOG("%s:%d pkt error\n",iface->serial,iface->ifaceno);
+        res=libusb_submit_transfer(lintr->tr);
+        if(res<0){
+            HALLOG("%s:%d libusb_submit_transfer errror %X\n",iface->serial,iface->ifaceno,res);
+        }
         break;
     case LIBUSB_TRANSFER_TIMED_OUT :
         HALLOG("%s:%d pkt timeout\n",iface->serial,iface->ifaceno);
-        break;        
+        break;
     case LIBUSB_TRANSFER_CANCELLED:
         HALLOG("%s:%d pkt_cancelled (len=%d) \n",iface->serial,iface->ifaceno,transfer->actual_length);
         if(transfer->actual_length==64){
-            yyPushNewPkt(iface,&lintr->tmppkt);
+            yPktQueuePushD2H(iface,&lintr->tmppkt,NULL);
         }
         break;
     case LIBUSB_TRANSFER_STALL:
@@ -399,7 +478,7 @@ static void read_callback(struct libusb_transfer *transfer)
         if(res<0){
             HALLOG("%s:%d libusb_submit_transfer errror %X\n",iface->serial,iface->ifaceno,res);
         }
-        break;        
+        break;
     case LIBUSB_TRANSFER_NO_DEVICE:
         HALLOG("%s:%d pkt_cancelled (len=%d)\n",iface->serial,iface->ifaceno,transfer->actual_length);
         return;
@@ -408,7 +487,7 @@ static void read_callback(struct libusb_transfer *transfer)
         break;
     default:
         HALLOG("%s:%d unknown state %X\n",iface->serial,iface->ifaceno,transfer->status);
-        break;        
+        break;
     }
 }
 
@@ -421,36 +500,35 @@ int yyySetup(yInterfaceSt *iface,char *errmsg)
     struct libusb_config_descriptor *config;
     const struct libusb_interface_descriptor* ifd;
 
-    
-   
+
+
     HALLOG("%s:%d yyySetup %X:%X\n",iface->serial,iface->ifaceno,iface->vendorid,iface->deviceid);
-    yyyInitPktQueue(iface);
     if(iface->devref==NULL){
         return YERR(YAPI_DEVICE_NOT_FOUND);
     }
     if((res=libusb_open(iface->devref,&iface->hdl))!=0){
-        return yLinSetErr(res,errmsg);
+        return yLinSetErr("libusb_open", res,errmsg);
     }
-    
+
     if((res=libusb_kernel_driver_active(iface->hdl,iface->ifaceno))<0){
-        error= yLinSetErr(res,errmsg);   
-        goto error;     
+        error= yLinSetErr("libusb_kernel_driver_active",res,errmsg);
+        goto error;
     }
     if(res){
-        HALLOG("%s:%d need to detache kernel driver\n",iface->serial,iface->ifaceno);
+        HALLOG("%s:%d need to detach kernel driver\n",iface->serial,iface->ifaceno);
         if((res = libusb_detach_kernel_driver(iface->hdl,iface->ifaceno))<0){
-            error= yLinSetErr(res,errmsg);   
-            goto error;     
+            error= yLinSetErr("libusb_detach_kernel_driver",res,errmsg);
+            goto error;
         }
     }
 
     HALLOG("%s:%d Claim interface\n",iface->serial,iface->ifaceno);
     if((res = libusb_claim_interface(iface->hdl,iface->ifaceno))<0){
-        error= yLinSetErr(res,errmsg);   
-        goto error;     
+        error= yLinSetErr("libusb_claim_interface", res,errmsg);
+        goto error;
     }
 
-    
+
     res=getDevConfig(iface->devref,&config);
     if(res<0){
         error=YERRMSG(YAPI_IO_ERROR,"unable to get configuration descriptor");
@@ -464,12 +542,13 @@ int yyySetup(yInterfaceSt *iface,char *errmsg)
         if((ifd->endpoint[j].bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN){
             iface->rdendp = ifd->endpoint[j].bEndpointAddress;
         }else{
-            iface->wrendp = ifd->endpoint[j].bEndpointAddress;            
-        }         
+            iface->wrendp = ifd->endpoint[j].bEndpointAddress;
+        }
     }
 
-
-
+    yPktQueueInit(&iface->rxQueue);
+    yPktQueueInit(&iface->txQueue);
+    iface->flags.yyySetupDone = 1;
 
     for(j=0;j< NB_LINUX_USB_TR ; j++){
         iface->rdTr[j].iface = iface;
@@ -488,16 +567,16 @@ int yyySetup(yInterfaceSt *iface,char *errmsg)
 
     }
 
-  //HALLOG("%s:%d yyyRead\n",iface->serial ,iface->ifaceno);
+    //HALLOG("%s:%d yyyRead\n",iface->serial ,iface->ifaceno);
     for(j=0;j< NB_LINUX_USB_TR ; j++){
         //HALLOG("%s:%d libusb_TR transmit (%d)\n",iface->serial,iface->ifaceno,j);
         res=libusb_submit_transfer(iface->rdTr[j].tr);
         if(res<0){
-            return yLinSetErr(res,errmsg);
+            return yLinSetErr("libusb_submit_transfer",res,errmsg);
         }
     }
     HALLOG("%s:%d yyySetup done\n",iface->serial,iface->ifaceno);
-   
+
     return YAPI_SUCCESS;
 error:
     libusb_close(iface->hdl);
@@ -506,41 +585,25 @@ error:
 
 
 
-int yyyRead(yInterfaceSt *iface,char *errmsg)
+
+int yyySignalOutPkt(yInterfaceSt *iface)
 {
-    return YAPI_SUCCESS;
-}
-
-//check for pending packets
-int yyyReadIdle(yInterfaceSt *iface,char *errmsg)
-{ 
-    return YAPI_SUCCESS;
-}
-
-
-int yyyReadStop(yInterfaceSt *iface,char *errmsg)
-{
-    return YAPI_SUCCESS;
-}
-
-    
-
-int yyyWrite(yInterfaceSt *iface,USB_Packet *pkt,char *errmsg)
-{
-    int transfered,res;
-
-    //HALLOG("%s:%d yyywrite (ep=%X  size=%d) \n",iface->serial,iface->ifaceno,iface->wrendp,sizeof(USB_Packet));
-    //dumpAnyPacket(iface->h2dpkt.pkt.data);
-    res = libusb_interrupt_transfer(iface->hdl,
+    pktItem *pktitem;
+    yPktQueuePopH2D(iface, &pktitem);
+    while (pktitem!=NULL){
+        int transfered,res;
+        res = libusb_interrupt_transfer(iface->hdl,
                                     iface->wrendp,
-                                    (u8*)pkt,
+                                    (u8*)&pktitem->pkt,
                                     sizeof(USB_Packet),
                                     &transfered,
                                     5000/*5 sec*/);
-    if(res<0){
-        return yLinSetErr(res,errmsg);        
+        yFree(pktitem);
+        if(res<0){
+            return YAPI_IO_ERROR;
+        }
+        yPktQueuePopH2D(iface, &pktitem);
     }
-    YASSERT(transfered ==  sizeof(USB_Packet));
 
     return YAPI_SUCCESS;
 }
@@ -550,7 +613,7 @@ int yyyWrite(yInterfaceSt *iface,USB_Packet *pkt,char *errmsg)
 void yyyPacketShutdown(yInterfaceSt  *iface)
 {
     int res,j;
-
+    iface->flags.yyySetupDone = 0;
     HALLOG("%s:%d cancel all transfer\n",iface->serial,iface->ifaceno);
     for(j=0;j< NB_LINUX_USB_TR ; j++){
         int count=10;
@@ -564,24 +627,25 @@ void yyyPacketShutdown(yInterfaceSt  *iface)
     }
 
     for(j=0;j< NB_LINUX_USB_TR ; j++){
-        if (iface->rdTr[j].tr){    
+        if (iface->rdTr[j].tr){
             HALLOG("%s:%d libusb_TR free %d\n",iface->serial,iface->ifaceno,j);
             libusb_free_transfer(iface->rdTr[j].tr);
             iface->rdTr[j].tr=NULL;
-        }    
+        }
     }
     HALLOG("%s:%d libusb relase iface\n",iface->serial,iface->ifaceno);
     res = libusb_release_interface(iface->hdl,iface->ifaceno);
     if(res != 0 && res!=LIBUSB_ERROR_NOT_FOUND && res!=LIBUSB_ERROR_NO_DEVICE){
         HALLOG("%s:%dlibusb_release_interface error\n",iface->serial,iface->ifaceno);
     }
-    
+
     res = libusb_attach_kernel_driver(iface->hdl,iface->ifaceno);
     if(res<0 && res!=LIBUSB_ERROR_NO_DEVICE){
         HALLOG("%s:%d libusb_attach_kernel_driver error\n",iface->serial,iface->ifaceno);
     }
     libusb_close(iface->hdl);
-    yyyFreePktQueue(iface);
+    yPktQueueFree(&iface->rxQueue);
+    yPktQueueFree(&iface->txQueue);
 }
 
 #endif

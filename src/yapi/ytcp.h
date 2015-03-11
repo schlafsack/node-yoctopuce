@@ -1,39 +1,39 @@
 /*********************************************************************
  *
- * $Id: ytcp.h 10311 2013-03-14 13:18:58Z mvuilleu $
+ * $Id: ytcp.h 17313 2014-08-27 09:34:05Z seb $
  *
  *  Declaration of a client TCP stack
  *
  * - - - - - - - - - License information: - - - - - - - - - 
  *
- * Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
+ *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
- * 1) If you have obtained this file from www.yoctopuce.com,
- *    Yoctopuce Sarl licenses to you (hereafter Licensee) the
- *    right to use, modify, copy, and integrate this source file
- *    into your own solution for the sole purpose of interfacing
- *    a Yoctopuce product with Licensee's solution.
+ *  Yoctopuce Sarl (hereafter Licensor) grants to you a perpetual
+ *  non-exclusive license to use, modify, copy and integrate this
+ *  file into your software for the sole purpose of interfacing 
+ *  with Yoctopuce products. 
  *
- *    The use of this file and all relationship between Yoctopuce 
- *    and Licensee are governed by Yoctopuce General Terms and 
- *    Conditions.
+ *  You may reproduce and distribute copies of this file in 
+ *  source or object form, as long as the sole purpose of this
+ *  code is to interface with Yoctopuce products. You must retain 
+ *  this notice in the distributed source file.
  *
- *    THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
- *    WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
- *    WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS 
- *    FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
- *    EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
- *    INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, 
- *    COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR 
- *    SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT 
- *    LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
- *    CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
- *    BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
- *    WARRANTY, OR OTHERWISE.
+ *  You should refer to Yoctopuce General Terms and Conditions
+ *  for additional information regarding your rights and 
+ *  obligations.
  *
- * 2) If your intent is not to interface with Yoctopuce products,
- *    you are not entitled to use, read or create any derived 
- *    material from this source file.
+ *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS 
+ *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
+ *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
+ *  INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, 
+ *  COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR 
+ *  SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT 
+ *  LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
+ *  CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
+ *  BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
+ *  WARRANTY, OR OTHERWISE.
  *
  *********************************************************************/
 
@@ -58,8 +58,6 @@ extern "C" {
  **************************************************************/
 
 //SOCKET RELATED DEFIITIONS AND INCLUDE
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #else
 #define SOCKET_ERROR -1
 #define INVALID_SOCKET -1
@@ -76,16 +74,6 @@ extern "C" {
 #define SEND_NOSIGPIPE 0
 #endif
 
-#if 0
-#define yTCPLOG(txt, ... )    printf(txt"\n",__VA_ARGS__)
-#else
-#ifdef __BORLANDC__
-#define yTCPLOG notcplog
-#else
-#define yTCPLOG(txt,...)
-#endif
-#endif
-    
 #ifdef WINDOWS_API
 #define SOCK_ERR    (WSAGetLastError())
 #else
@@ -97,8 +85,6 @@ extern "C" {
     
 int yNetSetErrEx(u32 line,unsigned err,char *errmsg);
     
-
-// A TCP_SOCKET is stored as a single BYTE
 #define YTCP_REMOTE_CLOSE 1
 
 struct _NetHubSt;    
@@ -110,24 +96,60 @@ typedef struct {
 } WakeUpSocket;
 
 void yDupSet(char **storage, const char *val);
-
 void yInitWakeUpSocket(WakeUpSocket *wuce);
 int  yStartWakeUpSocket(WakeUpSocket *wuce, char *errmsg);
 int  yDringWakeUpSocket(WakeUpSocket *wuce, u8 signal, char *errmsg);
 int  yConsumeWakeUpSocket(WakeUpSocket *wuce, char *errmsg);
 void yFreeWakeUpSocket(WakeUpSocket *wuce);
-    
+int yTcpDownload(const char *host, const char *url, u8 **out_buffer, u32 mstimeout, char *errmsg);
+
 int  yTcpInit(char *errmsg);
 u32  yResolveDNS(const char *name,char *errmsg);
 void yTcpInitReq(struct _TcpReqSt *tcpreq, struct _NetHubSt *hub);
-int  yTcpOpenReq(struct _TcpReqSt *tcpreq, const char *request, int reqlen, int isAsync, char *errmsg);
+int  yTcpOpenReq(struct _TcpReqSt *tcpreq, const char *request, int reqlen, u32 flags, yapiRequestAsyncCallback callback, void *context, char *errmsg);
+int  yTcpIsAsyncReq(struct _TcpReqSt *req);
 int  yTcpSelectReq(struct _TcpReqSt **tcpreq, int size, u64 ms, WakeUpSocket *wuce, char *errmsg);
 int  yTcpEofReq(struct _TcpReqSt *tcpreq, char *errmsg);
-int  yTcpGetReq(struct _TcpReqSt *tcpreq, char **buffer);
-int  yTcpReadReq(struct _TcpReqSt *rcoreq, char *buffer, int len);
+int  yTcpGetReq(struct _TcpReqSt *tcpreq, u8 **buffer);
+int  yTcpReadReq(struct _TcpReqSt *rcoreq, u8 *buffer, int len);
 void yTcpCloseReq(struct _TcpReqSt *tcpreq);
 void yTcpFreeReq(struct _TcpReqSt *tcpreq);
 void yTcpShutdown(void);
+
+#include "ythread.h"
+
+#define SSDP_UUID_LEN   48
+#define SSDP_URL_LEN    48
+
+typedef struct 
+{   
+    char        serial[YOCTO_SERIAL_LEN];
+    char        uuid[SSDP_UUID_LEN];
+    char        url[SSDP_URL_LEN];
+    u64         detectedTime;
+    u64         maxAge;
+} SSDP_CACHE_ENTRY;
+
+
+// prototype of the ssdp hub discovery callback
+// will be called on discover, refresh, and expiration
+typedef void (*ssdpHubDiscoveryCallback)(const char *serial, const char *urlToRegister, const char *urlToUnregister);
+
+#define NB_SSDP_CACHE_ENTRY 32
+
+typedef struct {
+	int started;
+	ssdpHubDiscoveryCallback callback;
+    YSOCKET request_sock;
+    YSOCKET notify_sock;
+    yThread thread;
+	SSDP_CACHE_ENTRY*   SSDPCache[NB_SSDP_CACHE_ENTRY];
+} SSDPInfos;
+
+int 	ySSDPStart(SSDPInfos *SSDP, ssdpHubDiscoveryCallback callback, char *errmsg);
+int		ySSDPDiscover(SSDPInfos *SSDP, char *errmsg);
+void	ySSDPStop(SSDPInfos *SSDP);
+
 #ifdef  __cplusplus
 }
 #endif

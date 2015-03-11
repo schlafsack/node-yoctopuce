@@ -23,7 +23,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#include "./events.h"
+#include "events.h"
 
 using v8::Object;
 using v8::Handle;
@@ -43,7 +43,10 @@ using node::FatalException;
 namespace node_yoctopuce {
 
     void Event::DispatchToV8(Handle<Object> context, int argc, Handle<Value> argv[]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-variable"
         HandleScope scope;
+#pragma clang diagnostic pop
         if (!context.IsEmpty()) {
             Local<Value> ev = context->Get(String::NewSymbol("emit"));
 
@@ -72,6 +75,12 @@ namespace node_yoctopuce {
     void FunctionUpdateEvent::Dispatch(Handle<Object> context) {
         int argc = 3;
         Handle<Value> argv[3] = {String::NewSymbol("functionUpdate"), Integer::New(fundescr), String::New(data.c_str())};
+        DispatchToV8(context, argc, argv);
+    }
+
+    void DeviceLogEvent::Dispatch(Handle<Object> context) {
+        int argc = 3;
+        Handle<Value> argv[3] = {String::NewSymbol("deviceLog"), Integer::New(fundescr), String::New(data.c_str())};
         DispatchToV8(context, argc, argv);
     }
 

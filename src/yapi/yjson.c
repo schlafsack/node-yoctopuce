@@ -1,39 +1,39 @@
 /*********************************************************************
  *
- * $Id: yjson.c 7646 2012-09-13 15:05:29Z mvuilleu $
+ * $Id: yjson.c 18000 2014-10-10 16:43:40Z mvuilleu $
  *
  * Simple JSON parser (actually a slightly enhanced lexer)
  *
  * - - - - - - - - - License information: - - - - - - - - - 
  *
- * Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
+ *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
- * 1) If you have obtained this file from www.yoctopuce.com,
- *    Yoctopuce Sarl licenses to you (hereafter Licensee) the
- *    right to use, modify, copy, and integrate this source file
- *    into your own solution for the sole purpose of interfacing
- *    a Yoctopuce product with Licensee's solution.
+ *  Yoctopuce Sarl (hereafter Licensor) grants to you a perpetual
+ *  non-exclusive license to use, modify, copy and integrate this
+ *  file into your software for the sole purpose of interfacing 
+ *  with Yoctopuce products. 
  *
- *    The use of this file and all relationship between Yoctopuce 
- *    and Licensee are governed by Yoctopuce General Terms and 
- *    Conditions.
+ *  You may reproduce and distribute copies of this file in 
+ *  source or object form, as long as the sole purpose of this
+ *  code is to interface with Yoctopuce products. You must retain 
+ *  this notice in the distributed source file.
  *
- *    THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
- *    WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
- *    WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS 
- *    FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
- *    EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
- *    INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, 
- *    COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR 
- *    SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT 
- *    LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
- *    CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
- *    BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
- *    WARRANTY, OR OTHERWISE.
+ *  You should refer to Yoctopuce General Terms and Conditions
+ *  for additional information regarding your rights and 
+ *  obligations.
  *
- * 2) If your intent is not to interface with Yoctopuce products,
- *    you are not entitled to use, read or create any derived 
- *    material from this source file.
+ *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS 
+ *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
+ *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
+ *  INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, 
+ *  COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR 
+ *  SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT 
+ *  LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
+ *  CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
+ *  BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
+ *  WARRANTY, OR OTHERWISE.
  *
  *********************************************************************/
 #define __FILE_ID__  "yjson"
@@ -46,7 +46,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef WINDOWS_API
-#include <Windows.h>
+#if defined(__BORLANDC__)
+#pragma warn -8019
+#include <windows.h>
+#pragma warn +8019
+#else
+#include <windows.h>
+#endif
 #endif
 #endif
 
@@ -78,8 +84,8 @@ yJsonRetCode yJsonParse(yJsonStateMachine *j)
 {
     yJsonRetCode    res;
     yJsonState      st = j->st;
-    const char      *src = j->src;
-    const char      *end = j->end;
+    _FAR const char *src = j->src;
+    _FAR const char *end = j->end;
     char            *pt = j->pt;
     char            *ept = j->token + sizeof(j->token) - 1;
     char            c=0;
@@ -87,10 +93,10 @@ yJsonRetCode yJsonParse(yJsonStateMachine *j)
 skip:
     res = YJSON_NEED_INPUT;
     if(st == YJSON_HTTP_START || st == YJSON_START || st == YJSON_PARSE_ANY) {
-        j->next = -1;
-    } else if(j->next != -1) {
+        j->next = YJSON_PARSE_SPECIAL;
+    } else if(j->next != YJSON_PARSE_SPECIAL) {
         st = j->next;
-        j->next = -1;
+        j->next = YJSON_PARSE_SPECIAL;
     }
     
     while(1) {
@@ -194,7 +200,11 @@ skip:
                 }
                 src++; // skip double-quote or backslash
                 if(c == '"') goto token_done;
-                st++;
+                if (st == YJSON_PARSE_STRING) {
+                    st = YJSON_PARSE_STRINGQ;
+                } else { 
+                    st = YJSON_PARSE_STRINGCONTQ;
+                }
                 // fall through
             case YJSON_PARSE_STRINGQ:    // parsing a quoted string, within quoted character
             case YJSON_PARSE_STRINGCONTQ:// parsing the continuation of a quoted string, within quoted character
@@ -206,7 +216,12 @@ skip:
                     case 't': *pt++ = '\t'; break;
                     default: *pt++ = c;
                 }
-                st--; // continue string parsing;
+                if (st == YJSON_PARSE_STRINGQ) {
+                    st = YJSON_PARSE_STRING;
+                } else { 
+                    st = YJSON_PARSE_STRINGCONT;
+                }
+                // continue string parsing;
                 continue;
             case YJSON_PARSE_ARRAY:      // parsing an unnamed array
                 while(src < end && (*src == ' ' || *src == '\r' || *src == '\n')) src++;
@@ -216,9 +231,11 @@ skip:
                 }else{
                     j->next = YJSON_PARSE_ANY;
                 }
+                c = '[';
                 goto nest;
             case YJSON_PARSE_STRUCT:     // parsing a named structure
                 j->next = YJSON_PARSE_MEMBSTART;
+                c = '{';
             nest:
                 if(j->depth >= YJSON_MAX_DEPTH) goto push_error;
                 j->stack[j->depth++] = st;
@@ -289,6 +306,9 @@ skip:
                 st = YJSON_PARSE_ERROR;
                 // fall through
             case YJSON_PARSE_ERROR:      // dead end, parse error encountered
+                res = YJSON_FAILED;
+                goto done;
+            case YJSON_PARSE_SPECIAL:    // should never happen
                 res = YJSON_FAILED;
                 goto done;
         }

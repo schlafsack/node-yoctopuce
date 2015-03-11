@@ -77,10 +77,13 @@ namespace node_yoctopuce {
         YAPI_DEVICE device;
     };
 
-    class DeviceLogEvent : public DeviceEvent {
+    class DeviceLogEvent : public CharDataEvent {
     public:
-        inline explicit DeviceLogEvent(YAPI_DEVICE device)
-            : DeviceEvent("deviceLog", device) {}
+        inline explicit DeviceLogEvent(YAPI_FUNCTION fundescr, const char *data)
+        : CharDataEvent(data), fundescr(fundescr) {}
+        virtual void Dispatch(v8::Handle<v8::Object> context);
+    protected:
+        YAPI_FUNCTION fundescr;
     };
 
     class DeviceArrivalEvent : public DeviceEvent {

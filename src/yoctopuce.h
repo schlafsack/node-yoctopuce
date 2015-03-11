@@ -33,7 +33,7 @@
 #include <queue>
 #include <string>
 
-#include "./events.h"
+#include "events.h"
 
 namespace node_yoctopuce {
 
@@ -87,7 +87,7 @@ namespace node_yoctopuce {
 
         //  Events
         static void FwdLogEvent(const char* log, u32 loglen);
-        static void FwdDeviceLogEvent(YAPI_DEVICE device);
+        static void FwdDeviceLogEvent(YAPI_FUNCTION, const char *value);
         static void FwdDeviceArrivalEvent(YAPI_DEVICE device);
         static void FwdDeviceRemovalEvent(YAPI_DEVICE device);
         static void FwdDeviceChangeEvent(YAPI_DEVICE device);

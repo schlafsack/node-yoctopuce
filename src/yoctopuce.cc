@@ -23,7 +23,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#include "./yoctopuce.h"
+#include "yoctopuce.h"
 
 using v8::HandleScope;
 using v8::Persistent;
@@ -54,7 +54,10 @@ namespace node_yoctopuce {
     void Yoctopuce::Initialize(Handle<Object> target) {
         HandleScope scope;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         target_handle = Persistent<Object>::New(target);
+#pragma clang diagnostic pop
 
         // Expose API methods
         NODE_SET_METHOD(target_handle, "updateDeviceList", UpdateDeviceList);
@@ -86,7 +89,7 @@ namespace node_yoctopuce {
         // Initialise YAPI.
         char errmsg[YOCTO_ERRMSG_LEN];
         if (yapiInitAPI(Y_DETECT_USB, errmsg) != YAPI_SUCCESS
-            || yapiUpdateDeviceList(true, errmsg) != YAPI_SUCCESS) {
+            || yapiUpdateDeviceList((u32)true, errmsg) != YAPI_SUCCESS) {
                 THROW("Unable to initialize yapi. ", errmsg, ex);
                 scope.Close(ex);
                 return;
@@ -123,7 +126,7 @@ namespace node_yoctopuce {
     Handle<Value> Yoctopuce::UpdateDeviceList(const Arguments& args) {
         HandleScope scope;
         char errmsg[YOCTO_ERRMSG_LEN];
-        if (YISERR(yapiUpdateDeviceList(false, errmsg))) {
+        if (YISERR(yapiUpdateDeviceList((u32)false, errmsg))) {
             THROW("UpdateDeviceList failed: ", errmsg, ex);
             return scope.Close(ex);
         }
@@ -200,7 +203,7 @@ namespace node_yoctopuce {
         String::Utf8Value name_arg(args[0]->ToString());
 
         const char* name= *name_arg;
-        bool ret = !!yapiCheckLogicalName(name);
+        bool ret = yapiCheckLogicalName(name) != 0;
 
         return scope.Close(Boolean::New(ret));
     }
@@ -245,7 +248,7 @@ namespace node_yoctopuce {
 
         char errmsg[YOCTO_ERRMSG_LEN];
         int elements = 32;
-        int init_size = elements * sizeof(YAPI_DEVICE);
+        int init_size = elements * (int)sizeof(YAPI_DEVICE);
         YAPI_DEVICE *devices = new YAPI_DEVICE[elements];
         int ret, required_size;
 
@@ -257,8 +260,7 @@ namespace node_yoctopuce {
         }
         if (required_size > init_size) {
             delete [] devices;
-            elements = required_size / sizeof(YAPI_DEVICE);
-            init_size = elements * sizeof(YAPI_DEVICE);
+            elements = required_size / (int)sizeof(YAPI_DEVICE);
             devices = new YAPI_DEVICE[elements];
             if (YISERR(ret = yapiGetAllDevices(devices, elements,
                 &required_size, errmsg))) {
@@ -270,7 +272,7 @@ namespace node_yoctopuce {
 
         Local<Array> result = Array::New();
         for (int x = 0; x < ret; x++) {
-            result->Set(x, Number::New(devices[x]));
+            result->Set((uint32_t)x, Number::New(devices[x]));
         }
         delete[] devices;
         return scope.Close(result);
@@ -399,7 +401,7 @@ namespace node_yoctopuce {
 
         char errmsg[YOCTO_ERRMSG_LEN];
         int elements = 32;
-        int init_size = elements * sizeof(YAPI_FUNCTION);
+        int init_size = elements * (int)sizeof(YAPI_FUNCTION);
         YAPI_FUNCTION *functions = new YAPI_FUNCTION[elements];
         int ret, required_size;
 
@@ -411,8 +413,8 @@ namespace node_yoctopuce {
         }
         if (required_size > init_size) {
             delete [] functions;
-            elements = required_size / sizeof(YAPI_FUNCTION);
-            init_size = elements * sizeof(YAPI_FUNCTION);
+            elements = required_size / (int)sizeof(YAPI_FUNCTION);
+            init_size = elements * (int)sizeof(YAPI_FUNCTION);
             functions = new YAPI_FUNCTION[elements];
             if (YISERR(ret = yapiGetFunctionsByClass(function_class, prev_function,
                 functions, init_size, NULL, errmsg))) {
@@ -424,7 +426,7 @@ namespace node_yoctopuce {
 
         Local<Array> result = Array::New();
         for (int x = 0; x < ret; x++) {
-            result->Set(x, Number::New(functions[x]));
+            result->Set((uint32_t)x, Number::New(functions[x]));
         }
         delete[] functions;
         return scope.Close(result);
@@ -455,7 +457,7 @@ namespace node_yoctopuce {
 
         char errmsg[YOCTO_ERRMSG_LEN];
         int elements = 32;
-        int init_size = elements * sizeof(YAPI_FUNCTION);
+        int init_size = elements * (int)sizeof(YAPI_FUNCTION);
         YAPI_FUNCTION *functions = new YAPI_FUNCTION[elements];
         int ret, required_size;
 
@@ -467,8 +469,8 @@ namespace node_yoctopuce {
         }
         if (required_size > init_size) {
             delete [] functions;
-            elements = required_size / sizeof(YAPI_FUNCTION);
-            init_size = elements * sizeof(YAPI_FUNCTION);
+            elements = required_size / (int)sizeof(YAPI_FUNCTION);
+            init_size = elements * (int)sizeof(YAPI_FUNCTION);
             functions = new YAPI_FUNCTION[elements];
             if (YISERR(ret = yapiGetFunctionsByDevice(device_id, prev_function,
                 functions, init_size, NULL, errmsg))) {
@@ -480,7 +482,7 @@ namespace node_yoctopuce {
 
         Local<Array> result = Array::New();
         for (int x = 0; x < ret; x++) {
-            result->Set(x, Number::New(functions[x]));
+            result->Set((uint32_t)x, Number::New(functions[x]));
         }
         delete[] functions;
         return scope.Close(result);
@@ -559,12 +561,15 @@ namespace node_yoctopuce {
         return scope.Close(reply_arg);
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
     void Yoctopuce::FwdLogEvent(const char* log, u32 loglen) {
+#pragma clang diagnostic pop
         FwdEvent(new LogEvent(log));
     }
 
-    void Yoctopuce::FwdDeviceLogEvent(YAPI_DEVICE device) {
-        FwdEvent(new DeviceLogEvent(device));
+    void Yoctopuce::FwdDeviceLogEvent(YAPI_FUNCTION fundescr, const char *line) {
+        FwdEvent(new DeviceLogEvent(fundescr, line));
     }
 
     void Yoctopuce::FwdDeviceArrivalEvent(YAPI_DEVICE device) {
@@ -596,7 +601,10 @@ namespace node_yoctopuce {
         uv_async_send(&event_async);
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
     void Yoctopuce::OnEvent(uv_async_t *async, int status) {
+#pragma clang diagnostic pop
         // Snapshot the queued events.
         queue<Event*> events;
         uv_mutex_lock(&event_queue_mutex);

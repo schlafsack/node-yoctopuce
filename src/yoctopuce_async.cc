@@ -23,7 +23,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#include "./yoctopuce.h"
+#include "yoctopuce.h"
 
 using v8::HandleScope;
 using v8::Persistent;
@@ -69,8 +69,11 @@ namespace node_yoctopuce {
         baton->work = work;
         baton->device = string(*String::Utf8Value(device_arg));
         baton->message = string(*String::Utf8Value(message_arg));
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         baton->callback = Persistent<Function>::New(callback_arg);
         baton->request = Persistent<Object>::New(request_arg);
+#pragma clang diagnostic pop
         work->data = baton;
 
         uv_queue_work(uv_default_loop(), work, OnHttpRequest, (uv_after_work_cb)OnAfterHttpRequest);
@@ -91,14 +94,17 @@ namespace node_yoctopuce {
         if (YISERR(baton->result)) {
             baton->error = string(errmsg);
         } else {
-            baton->response = string(response, response_size);
+            baton->response = string(response, (uint64_t)response_size);
             yapiHTTPRequestSyncDone(&request_handle, errmsg);
         }
         uv_mutex_unlock(&http_request_mutex);
     }
 
     void Yoctopuce::OnAfterHttpRequest(uv_work_t* req) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-variable"
         HandleScope scope;
+#pragma clang diagnostic pop
         HttpRequestBaton* baton = static_cast<HttpRequestBaton*>(req->data);
         if (YISERR(baton->result)) {
             EmitEvent(baton->request, String::NewSymbol("error"), String::New(baton->error.c_str()));
@@ -118,7 +124,10 @@ namespace node_yoctopuce {
     }
 
     void Yoctopuce::EmitEvent(v8::Handle<v8::Object> context, v8::Handle<v8::String> event_name, v8::Handle<v8::Value> data) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-variable"
         HandleScope scope;
+#pragma clang diagnostic pop
         Local<Value> ev = context->Get(String::NewSymbol("emit"));
         // If the emit function has been bound call it; otherwise
         // drop the events.

@@ -1,39 +1,39 @@
 /*********************************************************************
  *
- * $Id: ydef.h 10864 2013-04-03 16:20:26Z mvuilleu $
+ * $Id: ydef.h 18673 2014-12-08 17:39:14Z mvuilleu $
  *
  * Standard definitions common to all yoctopuce projects
  *
  * - - - - - - - - - License information: - - - - - - - - -
  *
- * Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
+ *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
- * 1) If you have obtained this file from www.yoctopuce.com,
- *    Yoctopuce Sarl licenses to you (hereafter Licensee) the
- *    right to use, modify, copy, and integrate this source file
- *    into your own solution for the sole purpose of interfacing
- *    a Yoctopuce product with Licensee's solution.
+ *  Yoctopuce Sarl (hereafter Licensor) grants to you a perpetual
+ *  non-exclusive license to use, modify, copy and integrate this
+ *  file into your software for the sole purpose of interfacing
+ *  with Yoctopuce products.
  *
- *    The use of this file and all relationship between Yoctopuce
- *    and Licensee are governed by Yoctopuce General Terms and
- *    Conditions.
+ *  You may reproduce and distribute copies of this file in
+ *  source or object form, as long as the sole purpose of this
+ *  code is to interface with Yoctopuce products. You must retain
+ *  this notice in the distributed source file.
  *
- *    THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
- *    WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
- *    WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
- *    FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
- *    EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
- *    INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA,
- *    COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR
- *    SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT
- *    LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
- *    CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
- *    BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
- *    WARRANTY, OR OTHERWISE.
+ *  You should refer to Yoctopuce General Terms and Conditions
+ *  for additional information regarding your rights and
+ *  obligations.
  *
- * 2) If your intent is not to interface with Yoctopuce products,
- *    you are not entitled to use, read or create any derived
- *    material from this source file.
+ *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
+ *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
+ *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
+ *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
+ *  INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA,
+ *  COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR
+ *  SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT
+ *  LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
+ *  CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
+ *  BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
+ *  WARRANTY, OR OTHERWISE.
  *
  *********************************************************************/
 
@@ -63,7 +63,20 @@ typedef signed long int         s32;
 typedef unsigned long long      u64;
 typedef signed long long        s64;
 #define VARIABLE_SIZE
+#define FMTs64 "lld"
+#define FMTu64 "llu"
+#define FMTx64 "llx"
+#else
 
+#ifdef __BORLANDC__
+typedef unsigned __int8         u8;
+typedef __int8                  s8;
+typedef unsigned __int16        u16;
+typedef __int16                 s16;
+typedef unsigned __int32        u32;
+typedef __int32                 s32;
+typedef unsigned __int64        u64;
+typedef __int64                 s64;
 #else
 typedef unsigned char           u8;
 typedef signed char             s8;
@@ -71,15 +84,10 @@ typedef unsigned short int      u16;
 typedef signed short int        s16;
 typedef unsigned int            u32;
 typedef signed int              s32;
-#ifdef __BORLANDC__
-typedef unsigned __int64        u64;
-typedef __int64                 s64;
-#else
-typedef unsigned long           u64;
-typedef signed long             s64;
-#define VARIABLE_SIZE           0
+typedef unsigned long long      u64;
+typedef signed long long        s64;
 #endif
-
+#define VARIABLE_SIZE           0
 #endif
 
 
@@ -98,6 +106,9 @@ typedef signed long int         s32;
 typedef unsigned long long      u64;
 typedef signed long long        s64;
 #define VARIABLE_SIZE           0
+#define FMTs64 "lld"
+#define FMTu64 "llu"
+#define FMTx64 "llx"
 
 #elif defined(__APPLE__)
 #include <TargetConditionals.h>
@@ -130,6 +141,9 @@ typedef signed int              s32;
 typedef unsigned long           u64;
 typedef signed long             s64;
 #define VARIABLE_SIZE           0
+#define FMTs64 "ld"
+#define FMTu64 "lu"
+#define FMTx64 "lx"
 #include <pthread.h>
 #include <errno.h>
 
@@ -138,8 +152,19 @@ typedef signed long             s64;
 #define LINUX_API
 #if defined(__i386__)
 #define __32BITS__
+#define FMTs64 "lld"
+#define FMTu64 "llu"
+#define FMTx64 "llx"
 #elif defined(__x86_64__)
 #define __64BITS__
+#define FMTs64 "ld"
+#define FMTu64 "lu"
+#define FMTx64 "lx"
+#else
+#define __32BITS__
+#define FMTs64 "lld"
+#define FMTu64 "llu"
+#define FMTx64 "llx"
 #endif
 
 #include <stdint.h>
@@ -174,38 +199,50 @@ typedef s32   YAPI_FUNCTION;    /* yStrRef of serial + (ystrRef of funcId << 16)
 #ifdef MICROCHIP_API
 typedef u8              YSOCKET;
 typedef s8              YYSBIO;
-typedef s8              YUSBIO;
-typedef s8              YUSBDEV;
+typedef s8              YTRNKIO;
 #else
-#if defined(WINDOWS_API) && defined(__64BITS__)
-typedef unsigned __int64 YSOCKET;
+// we have hardcoded the type of SOCKET to
+// prevent to mess up with user own code
+#if defined(WINDOWS_API)
+#if defined(__64BITS__)
+typedef u64 YSOCKET;
+#else
+typedef u32 YSOCKET;
+#endif
 #else
 typedef int             YSOCKET;
 #endif
-typedef s32             YYSBIO;
 typedef s32             YUSBIO;
 typedef s32             YUSBDEV;
 #endif
 
+#define YIO_INVALID      0
 #define YIO_USB          1
 #define YIO_TCP          2
 #define YIO_YSB          3
-    
-#define YIO_REMOTE_CLOSE 1
-#define YIO_ASYNC        2
+#define YIO_TRUNK        4
 
+#define YIO_DEFAULT_USB_TIMEOUT  2000u
+#define YIO_DEFAULT_TCP_TIMEOUT 20000u
+#define YIO_IDLE_TCP_TIMEOUT     5000u
+
+#ifdef MICROCHIP_API
+// same as yhub devhdl
+typedef s16 YIOHDL;
+#else
+// make sure this union is no more than 8 bytes, YIOHDL is allocated used in all foreign APIs
 typedef struct{
     u8      type;
-    u8      flags;
-    yUrlRef url;
+    u8      pad8;
+    u16     pad16;
     union {
-        // make sure this union stay 32 bit, YIOHDL is used in all foreign APIs
         u32     tcpreqidx;
         YUSBIO  hdl;
-        YYSBIO  ysb;
     };
 } YIOHDL;
+#endif
 
+#define YIOHDL_SIZE (sizeof(YIOHDL))
 
 #define INVALID_YHANDLE (-1)
 
@@ -221,18 +258,65 @@ typedef struct{
 #define U8ADDR(x)  ((u8 *)&(x))
 #define U16ADDR(x) ((u16 *)&(x))
 
-#define ADDRESSOF(x)    (&(x))    
-#define PTRVAL(x)       (*(x))    
+#define ADDRESSOF(x)    (&(x))
+#define PTRVAL(x)       (*(x))
+
+#if defined(__PIC24FJ256DA206__)
+#define _FAR __eds__
+#else
+#define _FAR
+#endif
+
+#if defined(MICROCHIP_API) || defined(VIRTUAL_HUB)
+#define YAPI_IN_YDEVICE
+#endif
 
 
 //#define DEBUG_CRITICAL_SECTION
 
 #ifdef DEBUG_CRITICAL_SECTION
 
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <WinBase.h>
+
+typedef enum  {
+    YCS_UNALLOCATED=0,
+    YCS_ALLOCATED=1,
+    YCS_DELETED=2
+} YCS_STATE;
+
+typedef enum  {
+    YCS_NONE=0,
+    YCS_INIT=1,
+    YCS_LOCK=2,
+    YCS_LOCKTRY=3,
+    YCS_RELEASE=4,
+    YCS_DELETE=5
+} YCS_ACTION;
+
 typedef struct {
-    u32                 no;
-    pthread_mutex_t     *dummy_cs;
-} yCRITICAL_SECTION;
+    int         thread;
+    const char* fileid;
+    int         lineno;
+    YCS_ACTION  action;
+} YCS_LOC;
+
+#define YCS_NB_TRACE 5
+
+typedef struct {
+    volatile u32                 no;
+    volatile YCS_STATE           state;
+    volatile int                 lock;
+#if defined(WINDOWS_API)
+    CRITICAL_SECTION             cs;
+#else
+    pthread_mutex_t              cs;
+#endif
+    YCS_LOC             last_actions[YCS_NB_TRACE];
+} yCRITICAL_SECTION_ST;
+
+typedef yCRITICAL_SECTION_ST* yCRITICAL_SECTION;
 
 
 void yDbgInitializeCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION *cs);
@@ -247,38 +331,28 @@ void yDbgDeleteCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION
 #define yLeaveCriticalSection(cs)       yDbgLeaveCriticalSection(__FILE_ID__,__LINE__,cs)
 #define yDeleteCriticalSection(cs)      yDbgDeleteCriticalSection(__FILE_ID__,__LINE__,cs)
 
-#elif defined(MICROCHIP_API)
-
+#else
+#if defined(MICROCHIP_API)
 #define yCRITICAL_SECTION               u8
 #define yInitializeCriticalSection(cs)
 #define yEnterCriticalSection(cs)
 #define yTryEnterCriticalSection(cs)    1
 #define yLeaveCriticalSection(cs)
 #define yDeleteCriticalSection(cs)
-
-#elif defined(WINDOWS_API)
-
-#define yCRITICAL_SECTION               CRITICAL_SECTION
-#define yInitializeCriticalSection(cs)  InitializeCriticalSection(cs)
-#define yEnterCriticalSection(cs)       EnterCriticalSection(cs)
-#define yTryEnterCriticalSection(cs)    TryEnterCriticalSection(cs)
-#define yLeaveCriticalSection(cs)       LeaveCriticalSection(cs)
-#define yDeleteCriticalSection(cs)      DeleteCriticalSection(cs)
-
 #else
-typedef struct {
-    pthread_mutex_t     *mutex_ptr;
-} yCRITICAL_SECTION;
 
+typedef void* yCRITICAL_SECTION;
 void yInitializeCriticalSection(yCRITICAL_SECTION *cs);
 void yEnterCriticalSection(yCRITICAL_SECTION *cs);
 int yTryEnterCriticalSection(yCRITICAL_SECTION *cs);
 void yLeaveCriticalSection(yCRITICAL_SECTION *cs);
 void yDeleteCriticalSection(yCRITICAL_SECTION *cs);
 #endif
+#endif
+
 
 typedef enum {
-    YAPI_SUCCESS          = 0,      // everything worked allright
+    YAPI_SUCCESS          = 0,      // everything worked all right
     YAPI_NOT_INITIALIZED  = -1,     // call yInitAPI() first !
     YAPI_INVALID_ARGUMENT = -2,     // one of the arguments passed to the function is invalid
     YAPI_NOT_SUPPORTED    = -3,     // the operation attempted is (currently) not supported
@@ -288,16 +362,18 @@ typedef enum {
     YAPI_TIMEOUT          = -7,     // the device took too long to provide an answer
     YAPI_IO_ERROR         = -8,     // there was an I/O problem while talking to the device
     YAPI_NO_MORE_DATA     = -9,     // there is no more data to read from
-    YAPI_EXHAUSTED        = -10,    // you have run out of a limited ressource, check the documentation
-    YAPI_DOUBLE_ACCES     = -11,    // you have two process that try to acces to the same device
-    YAPI_UNAUTHORIZED     = -12     // unauthorized access to password-protected device
+    YAPI_EXHAUSTED        = -10,    // you have run out of a limited resource, check the documentation
+    YAPI_DOUBLE_ACCES     = -11,    // you have two process that try to access to the same device
+    YAPI_UNAUTHORIZED     = -12,    // unauthorized access to password-protected device
+    YAPI_RTC_NOT_READY    = -13,    // real-time clock has not been initialized (or time was lost)
+    YAPI_FILE_NOT_FOUND   = -14     // the file is not found
 } YRETCODE;
 
 #define YISERR(retcode)   ((retcode) < 0)
 
 // Yoctopuce arbitrary constants
-#define YOCTO_API_VERSION_STR       "1.01"
-#define YOCTO_API_VERSION_BCD       0x0101
+#define YOCTO_API_VERSION_STR       "1.10"
+#define YOCTO_API_VERSION_BCD       0x0110
 #include "yversion.h"
 #define YOCTO_DEFAULT_PORT          4444
 #define YOCTO_VENDORID              0x24e0
@@ -305,7 +381,14 @@ typedef enum {
 #define YOCTO_DEVID_BOOTLOADER      2
 #define YOCTO_DEVID_HIGHEST         0xfefe
 
-// standard buffer sizes
+#define YOCTO_CALIB_TYPE_OFS        30
+
+// Known baseclases
+#define YOCTO_AKA_YFUNCTION         0
+#define YOCTO_AKA_YSENSOR           1
+#define YOCTO_N_BASECLASSES         2
+
+// Standard buffer sizes
 #define YOCTO_ERRMSG_LEN            256
 #define YOCTO_MANUFACTURER_LEN      20
 #define YOCTO_SERIAL_LEN            20
@@ -314,8 +397,10 @@ typedef enum {
 #define YOCTO_FIRMWARE_LEN          22
 #define YOCTO_LOGICAL_LEN           20
 #define YOCTO_FUNCTION_LEN          20
+#define YOCTO_UNIT_LEN              10
 #define YOCTO_PUBVAL_SIZE            6 // Size of the data (can be non null terminated)
 #define YOCTO_PUBVAL_LEN            16 // Temporary storage, >= YOCTO_PUBVAL_SIZE+2
+#define YOCTO_REPORT_LEN             9 // Max size of a timed report, including isAvg flag
 
 // firmware description
 typedef union {
@@ -347,15 +432,8 @@ typedef struct {
 #pragma pack(push,1)
 #endif
 
-
 #define USB_PKT_SIZE            64
-#define YPKT_USB_VERSION_BCD    0x0205
-
-
-#define YPKT_STREAM             0
-#define YPKT_CONF               1
-
-
+#define YPKT_USB_VERSION_BCD    0x0207
 #define TO_SAFE_U16(safe,unsafe)        {(safe).low = (unsafe)&0xff; (safe).high=(unsafe)>>8;}
 #define FROM_SAFE_U16(safe,unsafe)      {(unsafe) = (safe).low |((u16)((safe).high)<<8);}
 
@@ -364,12 +442,7 @@ typedef struct {
     u8 high;
 } SAFE_U16;
 
-
-#define YSTREAM_EMPTY       0
-#define YSTREAM_TCP         1
-#define YSTREAM_TCP_CLOSE   2
-#define YSTREAM_NOTICE      3
-
+#ifndef CPU_BIG_ENDIAN
 
 #define YPKTNOMSK   (0x7)
 typedef struct {
@@ -378,6 +451,21 @@ typedef struct {
     u8 pkt      : 2;
     u8 size     : 6;
 } YSTREAM_Head;
+#else
+#define YPKTNOMSK   (0x7)
+typedef struct {
+    u8 stream   : 5;
+    u8 pktno    : 3;
+    u8 size     : 6;
+    u8 pkt      : 2;
+} YSTREAM_Head;
+#endif
+#define YPKT_STREAM         0
+#define YPKT_CONF           1
+
+//
+// YPKT_CONF packets format
+//
 
 #define USB_CONF_RESET      0
 #define USB_CONF_START      1
@@ -399,7 +487,21 @@ typedef union{
     }retry;
 } USB_Conf_Pkt;
 
-#define NOTIFY_1STBYTE_MAXTINY  63  
+//
+// YPKT_STREAM packets can encompass multiple streams
+//
+
+#define YSTREAM_EMPTY       0
+#define YSTREAM_TCP         1
+#define YSTREAM_TCP_CLOSE   2
+#define YSTREAM_NOTICE      3
+#define YSTREAM_REPORT      4
+#define YSTREAM_META        5
+#define YSTREAM_REPORT_V2   6
+
+// Data in YSTREAM_NOTICE stream
+
+#define NOTIFY_1STBYTE_MAXTINY  63
 #define NOTIFY_1STBYTE_MINSMALL 128
 
 #define NOTIFY_PKT_NAME        0
@@ -411,6 +513,7 @@ typedef union{
 #define NOTIFY_PKT_STREAMREADY 6
 #define NOTIFY_PKT_LOG         7
 #define NOTIFY_PKT_FUNCNAMEYDX 8
+#define NOTIFY_PKT_PRODINFO    9
 
 typedef struct{
     char        serial[YOCTO_SERIAL_LEN];
@@ -445,6 +548,11 @@ typedef struct{
 typedef char    Notification_product[YOCTO_PRODUCTNAME_LEN];
 
 typedef struct {
+    char        name[YOCTO_PRODUCTNAME_LEN];
+    SAFE_U16    deviceid;
+}Notification_prodinfo;
+
+typedef struct {
     char        childserial[YOCTO_SERIAL_LEN];
     u8          onoff;
     u8          devydx;
@@ -467,7 +575,8 @@ typedef struct {
 }Notification_funcval;
 
 typedef struct {
-    char        funcid[YOCTO_FUNCTION_LEN];
+    char        funcidshort[YOCTO_FUNCTION_LEN-1];
+    u8          funclass;       // 0..YOCTO_N_BASECLASSES-1
     char        funcname[YOCTO_LOGICAL_LEN];
     u8          funydx;
 }Notification_funcnameydx;
@@ -481,6 +590,7 @@ typedef union {
         union {
             Notification_name           namenot;
             Notification_product        productname;
+            Notification_prodinfo       productinfo;
             Notification_child          childserial;
             Notification_firmware       firmwarenot;
             Notification_funcname       funcnamenot;
@@ -500,7 +610,12 @@ typedef union {
 #define NOTIFY_NETPKT_STREAMREADY '6'
 #define NOTIFY_NETPKT_LOG         '7'
 #define NOTIFY_NETPKT_FUNCNAMEYDX '8'
+#define NOTIFY_NETPKT_PRODINFO    '9'
+#define NOTIFY_NETPKT_TIMEV2YDX   'v'
+#define NOTIFY_NETPKT_DEVLOGYDX   'w'
+#define NOTIFY_NETPKT_TIMEVALYDX  'x'
 #define NOTIFY_NETPKT_FUNCVALYDX  'y'
+#define NOTIFY_NETPKT_TIMEAVGYDX  'z'
 #define NOTIFY_NETPKT_NOT_SYNC    '@'
 
 #define NOTIFY_NETPKT_VERSION   "01"
@@ -512,6 +627,7 @@ typedef union {
 
 #define NOTIFY_PKT_NAME_LEN             (sizeof(Notification_header) + sizeof(Notification_name))
 #define NOTIFY_PKT_PRODNAME_LEN         (sizeof(Notification_header) + sizeof(Notification_product))
+#define NOTIFY_PKT_PRODINFO_LEN         (sizeof(Notification_header) + sizeof(Notification_prodinfo))
 #define NOTIFY_PKT_CHILD_LEN            (sizeof(Notification_header) + sizeof(Notification_child))
 #define NOTIFY_PKT_FIRMWARE_LEN         (sizeof(Notification_header) + sizeof(Notification_firmware))
 #define NOTIFY_PKT_STREAMREADY_LEN      (sizeof(Notification_header) + sizeof(u8))
@@ -521,12 +637,97 @@ typedef union {
 #define NOTIFY_PKT_FUNCNAMEYDX_LEN      (sizeof(Notification_header) + sizeof(Notification_funcnameydx))
 #define NOTIFY_PKT_TINYVAL_MAXLEN       (sizeof(Notification_tiny) + YOCTO_PUBVAL_SIZE)
 
-// DEFINITION OF PUBLIC FLASH STORAGE
-#define USERFLASH_WORDS 11
-typedef u16 UserFlash[USERFLASH_WORDS];
-typedef UserFlash *UserFlashRef;
+// Data in YSTREAM_REPORT stream
+//
+// Reports are always first in a packet, which
+// makes it easy to filter packets that contain
+// reports only, and interpret them as fixed offsets
 
-// DEFINITION OF PROGAMING PACKET AND COMMAND SENT OVER USB
+typedef struct {
+    union {
+      struct {
+#ifndef CPU_BIG_ENDIAN
+        u8  funYdx:4;   // (LOWEST NIBBLE) function index on device, 0xf==timestamp
+        u8  extraLen:3; // Number of extra data bytes in addition to first one
+        u8  isAvg:1;    // (HIGHEST BIT) 0:one immediate value (1-4 bytes), 1:min/avg/max (2+4+2 bytes)
+#else
+        u8  isAvg:1;    // (HIGHEST BIT) 0:one immediate value (1-4 bytes), 1:min/avg/max (2+4+2 bytes)
+        u8  extraLen:3; // Number of extra data bytes in addition to first one
+        u8  funYdx:4;   // (LOWEST NIBBLE) function index on device, 0xf==timestamp
+#endif
+      };
+      u8    head;
+    };
+    u8  data[1];        // Payload itself (numbers in little-endian format)
+} USB_Report_Pkt_V1;
+
+typedef struct {
+    union {
+      struct {
+#ifndef CPU_BIG_ENDIAN
+        u8  funYdx:4;   // (LOWEST NIBBLE) function index on device, 0xf==timestamp
+        u8  extraLen:4; // Number of extra data bytes in addition to data[0]
+#else
+        u8  extraLen:4; // Number of extra data bytes in addition to data[0]
+        u8  funYdx:4;   // (LOWEST NIBBLE) function index on device, 0xf==timestamp
+#endif
+      };
+      u8    head;
+    };
+    union {
+      // When extraLen >= 4 && funYdx != 0xf : first data byte describes the payload
+      struct {
+#ifndef CPU_BIG_ENDIAN
+        u8  avgExtraLen:2;      // Number of extra bytes in the first value (average value, signed MeasureVal)
+        u8  minDiffExtraLen:2;  // Number of extra bytes to encode the 2nd value (avg - min, always > 0)
+        u8  maxDiffExtraLen:2;  // Number of extra bytes to encode the 3rd value (max - avg, always > 0)
+        u8  reserved:2;         // unused, currently set to 0
+#else
+        u8  reserved:2;         // unused, currently set to 0
+        u8  maxDiffExtraLen:2;  // Number of extra bytes to encode the 3rd value (max - avg)
+        u8  minDiffExtraLen:2;  // Number of extra bytes to encode the 2nd value (avg - min)
+        u8  avgExtraLen:2;      // Number of extra bytes in the first value (average)
+#endif
+      };
+      // When extraLen <= 3 (up to 4 bytes of data): live report value (1-4 bytes)
+      u8  data[1];        // Payload itself (numbers in little-endian format)
+    };
+} USB_Report_Pkt_V2;
+
+// data format in USB_Report_Pkt_V2:
+//
+
+// Data in YSTREAM_META stream
+
+#define USB_META_UTCTIME   1
+#define USB_META_DLFLUSH   2
+
+typedef union {
+    struct {
+        u8  metaType;      // =USB_META_UTCTIME
+        u8  unixTime[4];   // actually a DWORD in little-endian format
+    } utcTime;
+    struct {
+        u8  metaType;      // =USB_META_DLFLUSH (flush datalogger)
+    } dlFlush;
+} USB_Meta_Pkt;
+
+//
+// SSDP global definitions for hubs
+//
+
+#define YSSDP_PORT 1900
+#define YSSDP_MCAST_ADDR_STR  "239.255.255.250"
+#define YSSDP_MCAST_ADDR (0xFAFFFFEF)
+#define YSSDP_URN_YOCTOPUCE "urn:yoctopuce-com:device:hub:1"
+
+// prototype of the async request completion callback
+typedef void (*yapiRequestAsyncCallback)(void *context, const u8 *result, u32 resultlen, int retcode, const char *errmsg);
+
+
+//
+// PROG packets are only used in bootloader (USB DeviceID=0001/0002)
+//
 
 #define PROG_NOP         0 // nothing to do
 #define PROG_REBOOT      1 // reset the device
@@ -541,7 +742,7 @@ typedef UserFlash *UserFlashRef;
 
 #define ERASE_BLOCK_SIZE_INSTR      512               // the minimal erase size in nb instr
 #define PROGRAM_BLOCK_SIZE_INSTR    64                // the minimal program size in nb instr
-//defins somme address in bytes too
+//define some addresses in bytes too
 #define ERASE_BLOCK_SIZE_BADDR      (ERASE_BLOCK_SIZE_INSTR*2)
 #define PROGRAM_BLOCK_SIZE_BADDR    (PROGRAM_BLOCK_SIZE_INSTR*2)
 
@@ -550,15 +751,25 @@ typedef union {
     u8  raw[64];
     u16 words[32];
     struct {
+#ifndef CPU_BIG_ENDIAN
         u8  size : 5;
         u8  type : 3;
+#else
+        u8  type : 3;
+        u8  size : 5;
+#endif
         u8  addres_high;
         u16 adress_low;
         u8  data[MAX_BYTE_IN_PACKET];
     } pkt;
     struct {
+#ifndef CPU_BIG_ENDIAN
         u8   size : 5;
         u8   type : 3;
+#else
+        u8   type : 3;
+        u8   size : 5;
+#endif
         u8   pad;
         u16  pr_blk_size;
         u16  devidl;
@@ -570,20 +781,35 @@ typedef union {
         u16  er_blk_size;
     } pktinfo;
     struct {
+#ifndef CPU_BIG_ENDIAN
         u8   size : 5;
         u8   type : 3;
+#else
+        u8   type : 3;
+        u8   size : 5;
+#endif
         u8   dwordpos_lo;
+#ifndef CPU_BIG_ENDIAN
         u16  pageno : 14;
         u16  dwordpos_hi : 2;
+#else
+        u8  pageno_lo;
+        u8  misc_hi;
+#endif
         union {
-        u16  npages;    // for PROG_ERASE
-        u16  btsign;    // for PROG_REBOOT
-        u8   data[MAX_BYTE_IN_PACKET]; // for PROG_PROG
+            u16  npages;    // for PROG_ERASE
+            u16  btsign;    // for PROG_REBOOT
+            u8   data[MAX_BYTE_IN_PACKET]; // for PROG_PROG
         } opt;
     } pkt_ext;
     struct {
+#ifndef CPU_BIG_ENDIAN
         u8   size : 5;
         u8   type : 3;
+#else
+        u8   type : 3;
+        u8   size : 5;
+#endif
         u8   version;
         u16  pr_blk_size;
         u16  devidl;
@@ -601,11 +827,31 @@ typedef union {
     } pktinfo_ext;
 } USB_Prog_Packet;
 
+#ifndef CPU_BIG_ENDIAN
+#define SET_PROG_POS_PAGENO(PKT_EXT, PAGENO, POS)  {\
+                                (PKT_EXT).dwordpos_lo = (POS) & 0xff;\
+                                (PKT_EXT).dwordpos_hi = ((POS) >> 8) & 3;\
+                                (PKT_EXT).pageno = (PAGENO) & 0x3fff;}
+#define GET_PROG_POS_PAGENO(PKT_EXT, PAGENO, POS)  {\
+                                POS = (PKT_EXT).dwordpos_lo + ((u32)(PKT_EXT).dwordpos_hi <<8);\
+                                PAGENO = (PKT_EXT).pageno;}
+#else
+#define SET_PROG_POS_PAGENO(PKT_EXT, PAGENO, POS)  {\
+                                (PKT_EXT).dwordpos_lo = (POS) & 0xff;\
+                                (PKT_EXT).pageno_lo = (PAGENO) & 0xff;\
+                                (PKT_EXT).misc_hi = (((PAGENO) >>8) & 0x3f)+ (((POS) & 0x300) >>2) ;}
+#define GET_PROG_POS_PAGENO(PKT_EXT, PAGENO, POS)  {\
+                                POS = (PKT_EXT).dwordpos_lo + (((u16)(PKT_EXT).misc_hi << 2) & 0x300);\
+                                PAGENO = (PKT_EXT).pageno_lo + (((u16)(PKT_EXT).misc_hi & 0x3f) << 8);}
+#endif
+
+
+
 #define START_APPLICATION_SIGN   0
 #define START_BOOTLOADER_SIGN   ('b'| ('T'<<8))
 #define START_AUTOFLASHER_SIGN  ('b'| ('F'<<8))
 
-    
+
 typedef union {
     u8              data[USB_PKT_SIZE];
     u16             data16[USB_PKT_SIZE/2];
@@ -640,6 +886,9 @@ typedef union {
 #define PIC24FJ32GB004      0x0B
 #define PIC24FJ64GB004      0x0F
 
+// Spansion Flash JEDEC id
+#define JEDEC_SPANSION_4MB  0x16
+#define JEDEC_SPANSION_8MB  0x17
 
 #define YESC                (27u)
 
