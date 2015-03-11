@@ -1,6 +1,7 @@
 node-yoctopuce 
 ===
-[![NPM](https://nodei.co/npm/node-yoctopuce.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/node-yoctopuce/)[![NPM](https://nodei.co/npm-dl/node-yoctopuce.png?height=3)](https://nodei.co/npm/node-yoctopuce/)
+[![NPM](https://nodei.co/npm/node-yoctopuce.png?downloads=true&downloadRank=true)](https://nodei.co/npm/node-yoctopuce/)[![NPM](https://nodei.co/npm-dl/node-yoctopuce.png?months=6&height=3)](https://nodei.co/npm/node-yoctopuce/)
+
 [![Build Status](https://secure.travis-ci.org/schlafsack/node-yoctopuce.png)](http://travis-ci.org/schlafsack/node-yoctopuce)
 [![NPM version](https://badge.fury.io/js/node-yoctopuce.png)](http://badge.fury.io/js/node-yoctopuce)
 
