@@ -49,13 +49,13 @@ API
 
 The API is split into two sections. Firstly a high level, node-like, asynchronous API and secondly the synchronous bindings to the native YAPI library.
 
-####node-yocotpuce API
+#### node-yocotpuce API
 
 ###### Coming soon...
 
-####YAPI
+#### YAPI
 
-#####yapi.checkLogicalName(name)
+##### yapi.checkLogicalName(name)
 
 Verifies if a given logical name is valid or not for the yocotpuce API.
 
@@ -63,7 +63,7 @@ Verifies if a given logical name is valid or not for the yocotpuce API.
 var valid = yapi.checkLogicalName(name);
 ```
 
-#####yapi.getAllDevices()
+##### yapi.getAllDevices()
 
 Returns an array of descriptors for the devices visible to the API.
 
@@ -71,7 +71,7 @@ Returns an array of descriptors for the devices visible to the API.
 var descriptors = yapi.getAllDevices();
 ```
 
-#####yapi.getApiVersion()
+##### yapi.getApiVersion()
 
 Returns version information for the YAPI library.
 
@@ -79,7 +79,7 @@ Returns version information for the YAPI library.
 var apiVersion = yapi.getApiVersion();
 ```
 
-#####yapi.getDevice(identifier)
+##### yapi.getDevice(identifier)
 
 Returns the device descriptor for a device identified by a serial number, logical name or URL.
 
@@ -88,7 +88,7 @@ var identifier = 'THRMCPL1-0A420';
 var descriptor = yapi.getDevice(identifier);
 ```
 
-#####yapi.getDeviceInfo(descriptor)
+##### yapi.getDeviceInfo(descriptor)
 
 Returns the device information for a device identified by a device descriptor.
 
@@ -97,7 +97,7 @@ var descriptor = 239;
 var info = yapi.getDeviceInfo(descriptor);
 ```
 
-#####yapi.getDevicePath(descriptor)
+##### yapi.getDevicePath(descriptor)
 
 Returns the device's serial number and path to use when making an intial http request.
 
@@ -106,7 +106,7 @@ var descriptor = 239;
 var path = yapi.getDevicePath(descriptor);
 ```
 
-#####yapi.getFunction(functionClass, functionName);
+##### yapi.getFunction(functionClass, functionName);
 
 Returns a function descriptor for a function identified by a class and a full hardware id or logical name.
 
@@ -118,7 +118,7 @@ var functionName = 'THRMCPL1-0A420.temperature1';
 var descriptor = yapi.getFunction(functionClass, functionName);
 ```
 
-#####yapi.getFunctionInfo(descriptor)
+##### yapi.getFunctionInfo(descriptor)
 
 Returns the function information for a function identified by a function descriptor.
 
@@ -127,7 +127,7 @@ var descriptor = 5374191;
 var info = yapi.getFunctionInfo(descriptor);
 ```
 
-#####yapi.getFunctionsByClass(functionClass)
+##### yapi.getFunctionsByClass(functionClass)
 
 Returns a list of descriptors for functions in the given class.
 
@@ -136,7 +136,7 @@ var functionClass = 'Temperature';
 var descriptors = yapi.getFunctionsByClass(functionClass);
 ```
 
-#####yapi.getFunctionsByDevice(descriptor)
+##### yapi.getFunctionsByDevice(descriptor)
 
 Returns a list of descriptors for the functions of the device identified by the descriptor.
 
@@ -145,7 +145,7 @@ var descriptor = 239;
 var descriptors = yapi.getFunctionsByClass(functionClass);
 ```
 
-#####yapi.httpRequest(identifier, message)
+##### yapi.httpRequest(identifier, message)
 
 Makes an http request to the device identified by a serial number, logical name or URL. 
 
@@ -154,7 +154,7 @@ var identifier = 'THRMCPL1-0A420';
 var response = yapi.httpRequest(identifier, "GET /api.json HTTP/1.1" + CRLF + CRLF);
 ```
 
-#####yapi.registerHub(url)
+##### yapi.registerHub(url)
 
 Registers a network URL to be scanned for devices. 
 
@@ -163,7 +163,7 @@ var url = 'http://remote:4444/';
 yapi.registerHub(url);
 ```
 
-#####yapi.unregisterHub(url)
+##### yapi.unregisterHub(url)
 
 Unregisters a network URL. 
 
@@ -172,7 +172,7 @@ var url = 'http://remote:4444/';
 yapi.unregisterHub(url);
 ```
 
-#####Event: log
+##### Event: log
 
 The `log` event is emitted when the YAPI library needs to log debug messages. 
 
@@ -182,7 +182,7 @@ yapi.on("log", function (message) {
 });
 ```
 
-#####Event: deviceLog
+##### Event: deviceLog
 
 The `deviceLog` event is emitted when the YAPI library detects a device event. 
 
@@ -192,7 +192,7 @@ yapi.on("deviceLog", function (descriptor) {
 });
 ```
 
-#####Event: deviceArrival
+##### Event: deviceArrival
 
 The `deviceArrival` event is emitted when the YAPI library detects a device has arrived. 
 
@@ -202,7 +202,7 @@ yapi.on("deviceArrival", function (descriptor) {
 });
 ```
 
-#####Event: deviceRemoval
+##### Event: deviceRemoval
 
 The `deviceRemoval` event is emitted when the YAPI library detects a device has been removed. 
 
@@ -212,7 +212,7 @@ yapi.on("deviceRemoval", function (descriptor) {
 });
 ```
 
-#####Event: deviceChange
+##### Event: deviceChange
 
 The `deviceChange` event is emitted when the YAPI library detects that the logical name of a device has changed. 
 
@@ -222,7 +222,7 @@ yapi.on("deviceChange", function (descriptor) {
 });
 ```
 
-#####Event: functionUpdate
+##### Event: functionUpdate
 
 The `functionUpdate` event is emitted when the YAPI library detects that the value of a function has changed. 
 
